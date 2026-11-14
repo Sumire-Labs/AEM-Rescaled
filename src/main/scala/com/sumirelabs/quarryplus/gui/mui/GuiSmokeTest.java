@@ -58,8 +58,21 @@ public final class GuiSmokeTest {
                 return;
             }
             if (mc.player == null || mc.world == null || mc.getIntegratedServer() == null) return;
+            if (stage == 6) {
+                if (!worldTask.isDone()) return;
+                worldTask.get();
+                stage = 5;
+                mc.shutdown();
+                return;
+            }
             if (stage == 1) {
                 if (++ticks < 40) return;
+                if (Boolean.getBoolean("quarryplus.profileMachines")) {
+                    var world = mc.getIntegratedServer().getWorld(0);
+                    worldTask = mc.getIntegratedServer().addScheduledTask(() -> MachineProfile.run(world));
+                    stage = 6;
+                    return;
+                }
                 stage = 2;
                 ticks = 0;
             }
