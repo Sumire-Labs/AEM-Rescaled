@@ -1,6 +1,7 @@
 package com.yogpc.qp.compat;
 
-import java.util.Optional;
+import java.util.Arrays;
+import java.util.Objects;
 
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -31,22 +32,21 @@ public class FluidStore {
     }
 
     private static long injectToNearTile_internal(World world, BlockPos pos, FluidStack fluid, long amount) {
-        FluidStack fluidKind = new FluidStack(fluid, (int) Math.max(Math.min(amount, Integer.MAX_VALUE), 0));
-        for (EnumFacing facing : EnumFacing.values()) {
+        return fillHandlers(fluid, amount, () -> Arrays.stream(EnumFacing.values()).map(facing -> {
             TileEntity entity = world.getTileEntity(pos.offset(facing));
-            if (entity != null) {
-                Optional<IFluidHandler> capability = Optional.ofNullable(entity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite()));
-                capability.ifPresent(tank -> {
-                    int filled = tank.fill(fluidKind, false);
-                    if (filled > 0) {
-                        tank.fill(fluidKind, true);
-                        fluidKind.amount -= filled;
-                    }
-                });
-                if (fluidKind.amount <= 0) break;
-            }
+            return entity == null ? null : entity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite());
+        }).filter(Objects::nonNull).iterator());
+    }
+
+    static long fillHandlers(FluidStack fluid, long amount, Iterable<IFluidHandler> tanks) {
+        if (amount <= 0) return 0;
+        int offered = (int) Math.min(amount, Integer.MAX_VALUE);
+        FluidStack remainder = new FluidStack(fluid, offered);
+        for (IFluidHandler tank : tanks) {
+            remainder.amount -= tank.fill(remainder, true);
+            if (remainder.amount <= 0) break;
         }
-        return amount - fluidKind.amount;
+        return (long) offered - remainder.amount;
     }
 
 }
