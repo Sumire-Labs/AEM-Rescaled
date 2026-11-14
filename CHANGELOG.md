@@ -7,6 +7,14 @@
 - Resolve embedded dependencies with Java runtime attributes and verify their JAR entries and manifest declarations.
 - Keep AEM's Scala compilation, SRG Maven artifact, LGPL license and historical release workflows; accept both current and legacy Maven credential variables.
 
+## Fixed
+
+- Drop only the uninserted Workbench output when an adjacent inventory accepts part of a crafted stack.
+- Preserve large fluid balances during export and retain tagged fluid variants across saves.
+- Reject client-authored tile synchronization and stale Mover/template edit packets.
+- Respect canceled block-break events before legacy Quarries and Mining Wells consume energy or change blocks.
+- Publish portable required dependencies and expose Scala/ModularUI API types to Maven consumers; verify an independent consumer in CI.
+
 # [12.7.4]
 
 ## Build and compatibility

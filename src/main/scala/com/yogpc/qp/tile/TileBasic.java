@@ -151,9 +151,15 @@ public abstract class TileBasic extends APowerTile implements IEnchantableTile, 
         if (QuarryBlackList.contains(blockState, getWorld(), pos))
             return true;
 
+        QuarryFakePlayer fakePlayer = QuarryFakePlayer.get(((WorldServer) getWorld()), pos);
+        fakePlayer.setHeldItem(EnumHand.MAIN_HAND, getEnchantedPickaxe());
+        BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(world, pos, blockState, fakePlayer);
+        if (!world.canMineBlockBody(fakePlayer, pos) || MinecraftForge.EVENT_BUS.post(event)) {
+            fakePlayer.setHeldItem(EnumHand.MAIN_HAND, VersionUtil.empty());
+            return true;
+        }
         modules.forEach(iModule -> iModule.invoke(new IModule.BeforeBreak(world, pos)));
         IBlockState maybeUpdated = world.getBlockState(pos);
-        QuarryFakePlayer fakePlayer = QuarryFakePlayer.get(((WorldServer) getWorld()), pos);
         fakePlayer.setHeldItem(EnumHand.MAIN_HAND, getEnchantedPickaxe());
         if (!maybeUpdated.getBlock().isAir(maybeUpdated, world, pos)) {
             int enchantmentLevel;
@@ -163,10 +169,12 @@ public abstract class TileBasic extends APowerTile implements IEnchantableTile, 
             else
                 enchantmentLevel = this.fortune;
             if (!PowerManager.useEnergyBreak(this, maybeUpdated.getBlockHardness(getWorld(), pos), enchantmentLevel, this.unbreaking,
-                facingMap.containsKey(IAttachment.Attachments.REPLACER), blockState))
+                facingMap.containsKey(IAttachment.Attachments.REPLACER), blockState)) {
+                fakePlayer.setHeldItem(EnumHand.MAIN_HAND, VersionUtil.empty());
                 return false;
+            }
         }
-        BI bi = S_addDroppedItems(dropped, blockState, pos, fakePlayer);
+        BI bi = S_addDroppedItems(dropped, blockState, pos, fakePlayer, event);
         this.cacheItems.addAll(dropped);
         modules.forEach(iModule -> iModule.invoke(new IModule.AfterBreak(world, pos, maybeUpdated, world.getTotalWorldTime(), bi.i)));
 
@@ -223,12 +231,11 @@ public abstract class TileBasic extends APowerTile implements IEnchantableTile, 
         }
     }
 
-    private BI S_addDroppedItems(final Collection<ItemStack> collection, final IBlockState state, final BlockPos pos, QuarryFakePlayer fakePlayer) {
+    private BI S_addDroppedItems(final Collection<ItemStack> collection, final IBlockState state, final BlockPos pos,
+                                QuarryFakePlayer fakePlayer, BlockEvent.BreakEvent event) {
         Block block = state.getBlock();
         byte i;
         int xp = 0;
-        BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(world, pos, state, fakePlayer);
-        MinecraftForge.EVENT_BUS.post(event);
         if (!event.isCanceled()) {
             Set<ItemStack> rawItems;
             if (block.canSilkHarvest(getWorld(), pos, state, fakePlayer) && this.silktouch

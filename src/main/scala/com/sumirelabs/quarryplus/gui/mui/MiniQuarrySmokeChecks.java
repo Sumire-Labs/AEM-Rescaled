@@ -134,11 +134,46 @@ final class MiniQuarrySmokeChecks {
         TileEntityChest chest = (TileEntityChest) world.getTileEntity(chestPos);
         check(chest.getStackInSlot(0).getItem() == Item.getItemFromBlock(Blocks.DIAMOND_ORE), "Mini Quarry did not export to adjacent chest");
         stop(tile);
+        verifyLegacyMiningProtection(player);
+    }
+
+    private static void verifyLegacyMiningProtection(EntityPlayerMP player) {
+        var world = player.getServerWorld();
+        BlockPos machine = new BlockPos(10, 64, 2), target = machine.east();
+        world.setBlockState(machine, QuarryPlusI.blockMiningWell().getDefaultState());
+        var legacy = (com.yogpc.qp.tile.TileBasic) world.getTileEntity(machine);
+        world.setBlockState(target, Blocks.STONE.getDefaultState());
+        legacy.configure(100000000L, 10000000000L);
+        legacy.setStoredEnergy(legacy.getMaxStored());
+        long energy = legacy.getStoredEnergy();
+        Protection protection = new Protection(target);
+        MinecraftForge.EVENT_BUS.register(protection);
+        try {
+            var mine = com.yogpc.qp.tile.TileBasic.class.getDeclaredMethod("S_breakBlock", int.class, int.class,
+                    int.class, net.minecraft.block.state.IBlockState.class);
+            mine.setAccessible(true);
+            mine.invoke(legacy, target.getX(), target.getY(), target.getZ(), Blocks.AIR.getDefaultState());
+            check(world.getBlockState(target).getBlock() == Blocks.STONE,
+                    "Legacy Mining Well removed a block after its BreakEvent was canceled");
+            check(legacy.getStoredEnergy() == energy && legacy.isEmpty(),
+                    "Legacy Mining Well consumed energy or produced drops for a protected block");
+            protection.enabled = false;
+            mine.invoke(legacy, target.getX(), target.getY(), target.getZ(), Blocks.AIR.getDefaultState());
+            check(world.isAirBlock(target) && legacy.getStoredEnergy() < energy && !legacy.isEmpty(),
+                    "Legacy Mining Well did not harvest an allowed block normally");
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("Could not verify legacy Mining Well protection", error);
+        } finally {
+            MinecraftForge.EVENT_BUS.unregister(protection);
+            world.setBlockToAir(machine);
+            world.setBlockToAir(target);
+        }
     }
 
     public static final class Protection {
         private final BlockPos target;
+        private boolean enabled = true;
         Protection(BlockPos target) { this.target = target; }
-        @SubscribeEvent public void deny(BlockEvent.BreakEvent event) { if (event.getPos().equals(target)) event.setCanceled(true); }
+        @SubscribeEvent public void deny(BlockEvent.BreakEvent event) { if (enabled && event.getPos().equals(target)) event.setCanceled(true); }
     }
 }
