@@ -6,10 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Add QuarryPlus traversal/head-position profiling and an optional Pulsar SCALAR comparison that waits for lighting completion.
 - Add an opt-in JFR workload and comparison tools for Advanced Pump and Chunk Destroyer.
 
 ### Changed
 
+- Reduce QuarryPlus allocations in item routing, single-item drop aggregation and enchanted-tool creation. Preserve drop normalization, routing priority and immutable enchantment snapshots.
+- Avoid constructing energy-detail records when the tile's detail collector is disabled. Enabled collectors keep their existing output.
 - Reduce Chunk Destroyer allocations when checking no-drop block rules by retaining an ordered rule array until configuration reload. Rule matching, harvesting events and work limits are unchanged.
 - Reduce Advanced Pump search allocations by storing visited coordinates as packed longs and reusing the completed search set. Traversal order, drainage and energy costs are unchanged.
 - Update the CleanroomDevEnv base to `6b24e5c`, migrate the main build and shared scripts to Kotlin DSL, and update Gradle to 9.9.0.

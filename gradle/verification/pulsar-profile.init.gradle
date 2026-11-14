@@ -1,0 +1,11 @@
+// Optional development workload. Supply Pulsar's MCP JAR; production dependencies are unchanged.
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def pulsarJar = root.file(root.providers.gradleProperty('pulsarProfileJar').get())
+    if (!pulsarJar.isFile()) throw new GradleException("Pulsar MCP JAR not found: ${pulsarJar}")
+    root.dependencies.add('runtimeOnly', root.files(pulsarJar))
+    root.tasks.named('runClient').configure {
+        workingDir(root.file(root.providers.gradleProperty('pulsarProfileRunDir').orElse('run/pulsar-profile').get()))
+        systemProperty('quarryplus.requirePulsarProfile', 'true')
+    }
+}

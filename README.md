@@ -21,6 +21,7 @@ License files and source notices are maintained manually.
 
 JFR workload commands and before/after measurements are in [Advanced Pump profiling](docs/performance/advanced-pump.md).
 The follow-up [Chunk Destroyer measurements](docs/performance/chunk-destroyer.md) cover block-rule allocation and compatibility checks.
+[Mining with Pulsar](docs/performance/mining-and-pulsar.md) compares QuarryPlus and Chunk Destroyer with vanilla lighting and optional Pulsar SCALAR lighting, including propagation completion.
 
 The unclassified Maven artifact remains the SRG distribution JAR. Its runtime metadata includes Scala, Scalar and
 ModularUI. Optional integration mods and the Cleanroom userdev environment are configured by the consuming project.
