@@ -194,7 +194,7 @@ class TileAdvQuarry extends APowerTile
                 val blockHardness = state.getBlockHardness(getWorld, pos)
                 if (blockHardness != -1 && !blockHardness.isInfinity) {
                   (state.getBlock match {
-                    case _ if Config.content.noDigBLOCKS.exists(_.contain(state)) => (0, destroy)
+                    case _ if Config.content.shouldDestroyWithoutDrops(state) => (0, destroy)
                     case leave: IShearable if leave.isLeaves(state, getWorld, pos) && ench.silktouch => (ench.mode, shear)
                     case _ => (ench.mode, dig)
                   }) match {

@@ -3,7 +3,7 @@ package com.yogpc.qp
 import com.yogpc.qp.block.BlockSolidQuarry
 import com.yogpc.qp.recipe.WorkbenchRecipe
 import com.yogpc.qp.tile.TileAdvQuarry
-import com.yogpc.qp.utils.{BlockWrapper, ReflectionHelper}
+import com.yogpc.qp.utils.{BlockMatcher, BlockWrapper, ReflectionHelper}
 import net.minecraft.util.ResourceLocation
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.config.{ConfigElement, Configuration}
@@ -214,6 +214,10 @@ object Config {
       Files.write(path, BlockWrapper.getString(TileAdvQuarry.noDigBLOCKS.toSeq).split(System.lineSeparator()).toSeq.asJava)
       TileAdvQuarry.noDigBLOCKS
     }
+
+    private val noDropMatcher = new BlockMatcher(noDigBLOCKS.asJava)
+
+    def shouldDestroyWithoutDrops(state: net.minecraft.block.state.IBlockState): Boolean = noDropMatcher.test(state)
 
     def outputRecipeJson(): Unit = {
       val recipePath = configuration.getConfigFile.toPath.getParent.resolve("default" + RECIPE_DIRECTORY)

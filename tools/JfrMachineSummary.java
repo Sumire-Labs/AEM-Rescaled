@@ -32,6 +32,7 @@ public class JfrMachineSummary {
             }
         }
         Map<String, Long> allocations = new HashMap<>(), sites = new HashMap<>(), cpu = new HashMap<>();
+        Map<String, Long> allocationStacks = new HashMap<>();
         int gc = 0;
         double pauses = 0;
         for (RecordedEvent event : events) {
@@ -45,6 +46,12 @@ public class JfrMachineSummary {
                 long weight = event.getLong("weight");
                 allocations.merge(event.getClass("objectClass").getName(), weight, Long::sum);
                 sites.merge(aemFrame(event), weight, Long::sum);
+                if (Boolean.getBoolean("aem.profile.stacks") && event.getStackTrace() != null) {
+                    String stack = event.getClass("objectClass").getName() + "\n" + event.getStackTrace().getFrames().stream()
+                            .limit(12).map(frame -> "  " + frame.getMethod().getType().getName() + "." + frame.getMethod().getName())
+                            .collect(java.util.stream.Collectors.joining("\n"));
+                    allocationStacks.merge(stack, weight, Long::sum);
+                }
             } else if (type.equals("jdk.ExecutionSample")) {
                 cpu.merge(aemFrame(event), 1L, Long::sum);
             }
@@ -53,6 +60,7 @@ public class JfrMachineSummary {
         print("Allocation samples by class (weighted bytes)", allocations);
         print("Allocation samples by AEM caller (weighted bytes)", sites);
         print("CPU samples by AEM caller", cpu);
+        if (!allocationStacks.isEmpty()) print("Allocation stacks (weighted bytes)", allocationStacks);
     }
 
     private static String aemFrame(RecordedEvent event) {

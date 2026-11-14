@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Reduce Chunk Destroyer allocations when checking no-drop block rules by retaining an ordered rule array until configuration reload. Rule matching, harvesting events and work limits are unchanged.
 - Reduce Advanced Pump search allocations by storing visited coordinates as packed longs and reusing the completed search set. Traversal order, drainage and energy costs are unchanged.
 - Update the CleanroomDevEnv base to `6b24e5c`, migrate the main build and shared scripts to Kotlin DSL, and update Gradle to 9.9.0.
 - Replace tokens in all compiled Mod classes and validate text constants without interpreting class-file binary data as text.
