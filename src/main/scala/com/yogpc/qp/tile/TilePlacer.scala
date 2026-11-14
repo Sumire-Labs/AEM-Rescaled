@@ -16,10 +16,11 @@ import com.yogpc.qp.Config
 import com.yogpc.qp.block.ADismCBlock
 import com.yogpc.qp.gui.TranslationKeys
 import com.yogpc.qp.version.VersionUtil
+import java.util.function.Consumer
 import javax.annotation.{Nonnull, Nullable}
 import net.minecraft.entity.player.{EntityPlayer, InventoryPlayer}
 import net.minecraft.init.Blocks
-import net.minecraft.inventory.ItemStackHelper
+import net.minecraft.inventory.{IInventory, InventoryHelper, ItemStackHelper}
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.tileentity.TileEntity
@@ -40,71 +41,65 @@ class TilePlacer extends TileEntity with HasInv {
     val state = world.getBlockState(pos)
     state.getBlock.isAir(state, world, pos)
   }
-  private lazy val fakePlayer = QuarryFakePlayer.get(getWorld.asInstanceOf[WorldServer], getPos)
-
   def updateTick(): Unit = {
+    val fakePlayer = QuarryFakePlayer.get(getWorld.asInstanceOf[WorldServer], getPos)
     val facing = getWorld.getBlockState(getPos).getValue(ADismCBlock.FACING)
     val facing1 = EnumFacing.byIndex(facing.getIndex + 2)
     val facing2 = EnumFacing.byIndex(facing.getIndex + 4)
-    val playerInvCopy = new PlayerInvCopy(fakePlayer.inventory)
-    playerInvCopy.setItems(tile)
-    var lastIndex = 0
-    inventory.asScala.zipWithIndex.exists { case (is, i) =>
-      def t(): Boolean = {
-        lastIndex = i
-        fakePlayer.inventory.currentItem = i
-        val offset = getPos.offset(facing)
-        val facingList = List(facing.getOpposite, facing1, facing1.getOpposite, facing2, facing2.getOpposite)
-        if (VersionUtil.nonEmpty(is)) {
-          val onItemUseFirst = (facing: EnumFacing) =>
-            is.getItem.onItemUseFirst(fakePlayer, getWorld, getPos.offset(facing), facing.getOpposite,
-              0.5F, 0.5F, 0.5F, EnumHand.MAIN_HAND) == EnumActionResult.SUCCESS
-          if (onItemUseFirst(facing))
-            return true
-          if (!Config.content.placerOnlyPlaceFront) {
-            if (facingList.exists(onItemUseFirst))
+    val playerInvCopy = new PlayerInvCopy(fakePlayer.inventory, stack =>
+      InventoryHelper.spawnItemStack(getWorld, getPos.getX, getPos.getY + 1, getPos.getZ, stack))
+    playerInvCopy.withItems(tile) {
+      inventory.asScala.zipWithIndex.exists { case (is, i) =>
+        def t(): Boolean = {
+          fakePlayer.inventory.currentItem = i
+          val offset = getPos.offset(facing)
+          val facingList = List(facing.getOpposite, facing1, facing1.getOpposite, facing2, facing2.getOpposite)
+          if (VersionUtil.nonEmpty(is)) {
+            val onItemUseFirst = (facing: EnumFacing) =>
+              is.getItem.onItemUseFirst(fakePlayer, getWorld, getPos.offset(facing), facing.getOpposite,
+                0.5F, 0.5F, 0.5F, EnumHand.MAIN_HAND) == EnumActionResult.SUCCESS
+            if (onItemUseFirst(facing))
               return true
+            if (!Config.content.placerOnlyPlaceFront) {
+              if (facingList.exists(onItemUseFirst))
+                return true
+            }
           }
-        }
-        val k = getWorld.getBlockState(offset)
-        if (k.getBlock.onBlockActivated(getWorld, offset, k, fakePlayer, EnumHand.MAIN_HAND, facing.getOpposite, 0.5F, 0.5F, 0.5F))
-          return true
-        var flagPlacedDummyBlock = false
-        if (Config.content.placerOnlyPlaceFront && isAir(getWorld, offset.down)) {
-          getWorld.setBlockState(offset.down, Blocks.BARRIER.getDefaultState)
-          flagPlacedDummyBlock = true
+          val k = getWorld.getBlockState(offset)
+          if (k.getBlock.onBlockActivated(getWorld, offset, k, fakePlayer, EnumHand.MAIN_HAND, facing.getOpposite, 0.5F, 0.5F, 0.5F))
+            return true
+          var flagPlacedDummyBlock = false
+          if (Config.content.placerOnlyPlaceFront && isAir(getWorld, offset.down)) {
+            flagPlacedDummyBlock = getWorld.setBlockState(offset.down, Blocks.BARRIER.getDefaultState)
+          }
+
+          def itemUse(worldIn: World, pos: BlockPos, facing: EnumFacing, facing1: EnumFacing, facing2: EnumFacing, player: EntityPlayer, is: ItemStack): Boolean = {
+            val onItemUse = (enumFacing: EnumFacing) => is.onItemUse(player, getWorld, getPos.offset(enumFacing),
+              EnumHand.MAIN_HAND, enumFacing.getOpposite, 0.5f, 0.5f, 0.5f) == EnumActionResult.SUCCESS
+            if (onItemUse(facing)) true
+            //Do you want to place block on non-facing side?
+            else if (!Config.content.placerOnlyPlaceFront)
+              if (facingList.exists(onItemUse)) true
+              else false
+            else
+              false
+          }
+
+          try {
+            if (itemUse(getWorld, getPos, facing, facing1, facing2, fakePlayer, is)) return true
+          } finally {
+            if (flagPlacedDummyBlock && getWorld.getBlockState(offset.down).getBlock == Blocks.BARRIER)
+              getWorld.setBlockToAir(offset.down)
+          }
+
+          val value = is.useItemRightClick(getWorld, fakePlayer, EnumHand.MAIN_HAND)
+          fakePlayer.setHeldItem(EnumHand.MAIN_HAND, value.getResult)
+          value.getType == EnumActionResult.SUCCESS
         }
 
-        def itemUse(worldIn: World, pos: BlockPos, facing: EnumFacing, facing1: EnumFacing, facing2: EnumFacing, player: EntityPlayer, is: ItemStack): Boolean = {
-          val onItemUse = (enumFacing: EnumFacing) => is.onItemUse(player, getWorld, getPos.offset(enumFacing),
-            EnumHand.MAIN_HAND, enumFacing.getOpposite, 0.5f, 0.5f, 0.5f) == EnumActionResult.SUCCESS
-          if (onItemUse(facing)) true
-          //Do you want to place block on non-facing side?
-          else if (!Config.content.placerOnlyPlaceFront)
-            if (facingList.exists(onItemUse)) true
-            else false
-          else
-            false
-        }
-
-        if (itemUse(getWorld, getPos, facing, facing1, facing2, fakePlayer, is)) {
-          if (flagPlacedDummyBlock) getWorld.setBlockToAir(offset.down)
-          return true
-        } else if (flagPlacedDummyBlock) {
-          getWorld.setBlockToAir(offset.down)
-        }
-
-        val value = is.useItemRightClick(getWorld, fakePlayer, EnumHand.MAIN_HAND)
-        inventory.set(i, value.getResult)
-        value.getType == EnumActionResult.SUCCESS
+        t()
       }
-
-      t()
     }
-    if (lastIndex < tile.getSizeInventory)
-      if (VersionUtil.isEmpty(fakePlayer.inventory.getCurrentItem))
-        tile.setInventorySlotContents(lastIndex, VersionUtil.empty)
-    playerInvCopy.resetItems()
   }
 
   override def readFromNBT(compound: NBTTagCompound): Unit = {
@@ -147,13 +142,32 @@ class TilePlacer extends TileEntity with HasInv {
     else super.getCapability(capability, facing)
 }
 
-class PlayerInvCopy(inventory: InventoryPlayer) {
+class PlayerInvCopy(inventory: InventoryPlayer, overflow: Consumer[ItemStack]) {
 
-  def setItems(placer: TilePlacer): Unit = {
+  def withItems[T](placer: IInventory)(action: => T): T = {
+    setItems(placer)
+    try action
+    finally {
+      try saveItems(placer)
+      finally resetItems()
+    }
+  }
+
+  def setItems(placer: IInventory): Unit = {
     resetItems()
     for (i <- 0 until 9) {
       inventory.mainInventory.set(i, placer.getStackInSlot(i))
     }
+  }
+
+  private def saveItems(placer: IInventory): Unit = {
+    for (i <- 0 until 9) {
+      placer.setInventorySlotContents(i, inventory.mainInventory.get(i))
+    }
+    // Item callbacks may add container items outside the nine mirrored slots.
+    val extra = inventory.mainInventory.asScala.drop(9) ++ inventory.armorInventory.asScala ++ inventory.offHandInventory.asScala
+    extra.filterNot(_.isEmpty).foreach(overflow.accept)
+    placer.markDirty()
   }
 
   def resetItems(): Unit = {
