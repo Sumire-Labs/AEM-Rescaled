@@ -5,6 +5,29 @@
 This mod targets Cleanroom 0.7.14-alpha or newer. It requires Scala3 and ModularUI 3.1.6 or newer.
 This mod adds automatic miner. All machines can accept RF, MJ, EU and Forge Energy.
 
+## Development
+
+The build uses [CleanroomDevEnv at `6b24e5c`](https://github.com/Sumire-Labs/CleanroomDevEnv/commit/6b24e5cc419a97a9872feed849659610d3ce6055),
+adapted for AEM's Scala 3.9 sources and optional integrations. Use JDK 25 and the Gradle wrapper:
+
+```shell
+./gradlew build verifyReleaseJar
+```
+
+The main build, settings, run configurations, Mixin configuration and distribution verification use Kotlin DSL.
+AEM-specific dependency, runtime, publishing and historical-release scripts remain in `gradle/scripts/*.gradle`.
+Formatting is opt-in with `-Penable_spotless=true`; its configuration is in `gradle/spotless/`.
+License files and source notices are maintained manually.
+
+The unclassified Maven artifact remains the SRG distribution JAR. To verify publishing without uploading:
+
+```shell
+./gradlew publish -Ppublish_to_maven=true -Ppublish_to_local_maven=false -Pmaven_url=build/maven-verification
+```
+
+For remote publishing, both the template's `MAVEN_USERNAME` / `MAVEN_PASSWORD` and the existing
+`MAVEN_USER` / `MAVEN_PASS` environment variables are supported. Keep credentials outside this repository.
+
 ### Machines:
 
 * **QuarryPlus** : It digs to y = 1 in the area of max 256 x 256 (blocks). Enchantments allow improving fuel efficiency

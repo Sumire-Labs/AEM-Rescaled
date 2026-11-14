@@ -1,3 +1,12 @@
+# [Unreleased]
+
+## Build and compatibility
+
+- Update the CleanroomDevEnv base to `6b24e5c`, migrate the main build and shared scripts to Kotlin DSL, and update Gradle to 9.9.0.
+- Replace tokens in all compiled Mod classes and validate text constants without interpreting class-file binary data as text.
+- Resolve embedded dependencies with Java runtime attributes and verify their JAR entries and manifest declarations.
+- Keep AEM's Scala compilation, SRG Maven artifact, LGPL license and historical release workflows; accept both current and legacy Maven credential variables.
+
 # [12.7.4]
 
 ## Build and compatibility

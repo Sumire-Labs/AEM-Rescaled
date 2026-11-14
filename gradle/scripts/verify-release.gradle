@@ -7,6 +7,7 @@ def releaseJarFile = releaseJarTask.flatMap { nativeUserdev ? it.output : it.arc
 def computedVersion = versioning.version
 def releaseModId = mod_id.toString()
 def releaseLogoPath = mod_logo_path.toString()
+def modularUiRequired = file('src/main/scala/com/sumirelabs/quarryplus/gui/mui/QuarryGuiFactory.java').exists()
 tasks.register('verifyReleaseJar') {
     group = 'verification'
     description = 'Verifies version tokens, metadata, and the icon in the remapped release JAR.'
@@ -15,6 +16,7 @@ tasks.register('verifyReleaseJar') {
     inputs.property('version', computedVersion)
     inputs.property('modId', releaseModId)
     inputs.property('logoPath', releaseLogoPath)
+    inputs.property('modularUiRequired', modularUiRequired)
     doLast {
         def archive = releaseJarFile.get().asFile
         def expectedVersion = computedVersion.get()
@@ -39,7 +41,7 @@ tasks.register('verifyReleaseJar') {
                 throw new GradleException("Release logoFile must be ${releaseLogoPath}")
             }
             // Keep externally verified historical tags compatible, while guarding the MUI migration.
-            if (project.file('src/main/scala/com/sumirelabs/quarryplus/gui/mui/QuarryGuiFactory.java').exists()) {
+            if (modularUiRequired) {
                 readEntry('com/sumirelabs/quarryplus/gui/mui/QuarryGuiFactory.class')
                 if (!metadata.dependencies.contains('modularui')) {
                     throw new GradleException('ModularUI must be declared in the release metadata')
