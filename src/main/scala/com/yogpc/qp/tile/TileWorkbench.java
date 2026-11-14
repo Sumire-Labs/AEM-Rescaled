@@ -15,6 +15,8 @@ package com.yogpc.qp.tile;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 import cofh.api.tileentity.IInventoryConnection;
 import com.yogpc.qp.Config;
@@ -68,10 +70,8 @@ public class TileWorkbench extends APowerTile implements HasInv, IDebugSender, I
                     if (Config.content().noEnergy())
                         this.setStoredEnergy(0); // Set current energy to 0 to make waiting time.
                     ItemStack stack = currentRecipe.getOutput(inventory);
-                    ItemStack inserted = InvUtils.injectToNearTile(getWorld(), getPos(), stack);
-                    if (VersionUtil.nonEmpty(inserted)) {
-                        InventoryHelper.spawnItemStack(getWorld(), getPos().getX(), getPos().getY(), getPos().getZ(), stack);
-                    }
+                    deliverResult(stack, result -> InvUtils.injectToNearTile(getWorld(), getPos(), result),
+                        remainder -> InventoryHelper.spawnItemStack(getWorld(), getPos().getX(), getPos().getY(), getPos().getZ(), remainder));
                     currentRecipe.inputsJ().forEach(inputList -> {
                         for (IngredientWithCount i : inputList) {
                             if (inventory.stream().anyMatch(i::shrink)) break;
@@ -91,6 +91,11 @@ public class TileWorkbench extends APowerTile implements HasInv, IDebugSender, I
                 }
             }
         }
+    }
+
+    static void deliverResult(ItemStack result, UnaryOperator<ItemStack> insert, Consumer<ItemStack> drop) {
+        ItemStack remainder = insert.apply(result);
+        if (!remainder.isEmpty()) drop.accept(remainder);
     }
 
     @Override
