@@ -45,8 +45,9 @@ public class MoverMessage {
             MinecraftServer server = QuarryPlus.proxy.getPacketWorld(ctx.netHandler).getMinecraftServer();
             Optional.ofNullable(server).ifPresent(s -> s.addScheduledTask(() -> {
                 Container container = com.sumirelabs.quarryplus.gui.mui.QuarryModularContainer.unwrap(QuarryPlus.proxy.getPacketPlayer(ctx.netHandler).openContainer);
-                if (container.windowId == id) {
-                    ((ContainerMover) container).moveEnchant();
+                if (container instanceof ContainerMover mover && container.windowId == id
+                    && container.canInteractWith(QuarryPlus.proxy.getPacketPlayer(ctx.netHandler))) {
+                    mover.moveEnchant();
                 }
             }));
             return null;
@@ -87,8 +88,9 @@ public class MoverMessage {
             MinecraftServer server = QuarryPlus.proxy.getPacketWorld(ctx.netHandler).getMinecraftServer();
             Optional.ofNullable(server).ifPresent(s -> s.addScheduledTask(() -> {
                 Container container = com.sumirelabs.quarryplus.gui.mui.QuarryModularContainer.unwrap(QuarryPlus.proxy.getPacketPlayer(ctx.netHandler).openContainer);
-                if (container.windowId == id) {
-                    ((ContainerMover) container).setAvail(d);
+                if (container instanceof ContainerMover mover && container.windowId == id
+                    && container.canInteractWith(QuarryPlus.proxy.getPacketPlayer(ctx.netHandler))) {
+                    mover.setAvail(d);
                 }
             }));
             return null;

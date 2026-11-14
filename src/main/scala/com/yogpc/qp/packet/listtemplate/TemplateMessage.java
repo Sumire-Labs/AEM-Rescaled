@@ -3,6 +3,8 @@ package com.yogpc.qp.packet.listtemplate;
 import java.io.IOException;
 
 import com.yogpc.qp.QuarryPlus;
+import com.sumirelabs.quarryplus.gui.mui.QuarryModularContainer;
+import com.yogpc.qp.container.ContainerListTemplate;
 import com.yogpc.qp.item.ItemTemplate;
 import com.yogpc.qp.packet.IMessage;
 import net.minecraft.item.ItemStack;
@@ -41,8 +43,13 @@ public class TemplateMessage implements IMessage {
     @Override
     public IMessage onReceive(IMessage message, MessageContext ctx) {
         FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-            ItemStack stack = QuarryPlus.proxy.getPacketPlayer(ctx.netHandler).inventory.getCurrentItem();
+            var player = QuarryPlus.proxy.getPacketPlayer(ctx.netHandler);
+            var container = QuarryModularContainer.unwrap(player.openContainer);
+            ItemStack stack = player.inventory.getCurrentItem();
+            if (!(container instanceof ContainerListTemplate) || !container.canInteractWith(player)
+                || player.inventory.currentItem != itemIndex || !(stack.getItem() instanceof ItemTemplate)) return;
             ItemTemplate.setTemplate(stack, template);
+            player.inventory.markDirty();
         });
         return null;
     }
