@@ -19,7 +19,9 @@ AEM-specific dependency, runtime, publishing and historical-release scripts rema
 Formatting is opt-in with `-Penable_spotless=true`; its configuration is in `gradle/spotless/`.
 License files and source notices are maintained manually.
 
-The unclassified Maven artifact remains the SRG distribution JAR. To verify publishing without uploading:
+The unclassified Maven artifact remains the SRG distribution JAR. Its runtime metadata includes Scala, Scalar and
+ModularUI. Optional integration mods and the Cleanroom userdev environment are configured by the consuming project.
+To verify publishing without uploading:
 
 ```shell
 ./gradlew publish -Ppublish_to_maven=true -Ppublish_to_local_maven=false -Pmaven_url=build/maven-verification
