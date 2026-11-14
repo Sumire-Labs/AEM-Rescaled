@@ -3,7 +3,6 @@ package com.yogpc.qp.compat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.yogpc.qp.QuarryPlus;
@@ -71,10 +70,8 @@ public class InvUtils {
      */
     public static ItemStack injectToNearTile(@Nonnull final World w, @Nonnull BlockPos pos, final ItemStack is) {
 
-        List<? extends IInjector> injectors = Stream.of(EnumFacing.VALUES).flatMap(enumFacing -> {
-            TileEntity t = w.getTileEntity(pos.offset(enumFacing));
-            return INJECTORS.stream().filter(i -> t != null).flatMap(i -> i.getInjector(is, t, enumFacing));
-        }).collect(Collectors.toList());
+        // Complete discovery before inserting, preserving side and integration priority.
+        List<IInjector> injectors = InjectorDiscovery.find(is, facing -> w.getTileEntity(pos.offset(facing)), INJECTORS);
 
         ItemStack inserted = is.copy();
         for (IInjector injector : injectors) {

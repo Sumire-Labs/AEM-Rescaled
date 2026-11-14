@@ -177,15 +177,7 @@ class TileQuarry2 extends APowerTile()
     configure(getMaxStored, getMaxStored)
   }
 
-  override def getEnchantments = {
-    val enchantmentsMap = Map(
-      IEnchantableTile.EfficiencyID -> enchantments.efficiency,
-      IEnchantableTile.UnbreakingID -> enchantments.unbreaking,
-      IEnchantableTile.FortuneID -> enchantments.fortune,
-      IEnchantableTile.SilktouchID -> enchantments.silktouch.compare(false)
-    ) ++ enchantments.other
-    enchantmentsMap.collect(enchantCollector).asJava
-  }
+  override def getEnchantments = enchantments.visibleEnchantments
 
   override def setEnchantment(id: Short, value: Short): Unit = {
     val newEnch = id match {
@@ -287,7 +279,12 @@ class TileQuarry2 extends APowerTile()
               list
             }
 
-            drops.asScala.groupBy(ItemDamage.apply).view.mapValues(_.map(_.getCount).sum).toMap.map { case (damage, i) => damage.toStack(i) }.foreach(storage.addItem)
+            if (drops.size() == 1) {
+              val drop = drops.get(0)
+              storage.addItem(ItemDamage(drop).toStack(drop.getCount))
+            } else {
+              drops.asScala.groupBy(ItemDamage.apply).view.mapValues(_.map(_.getCount).sum).toMap.map { case (damage, i) => damage.toStack(i) }.foreach(storage.addItem)
+            }
             (true, event.getExpToDrop) // true means work is finished.
           } else {
             (true, event.getExpToDrop) // Block is replaced to air.
@@ -404,6 +401,13 @@ object TileQuarry2 {
   //---------- Data ----------
   case class EnchantmentHolder(efficiency: Int, unbreaking: Int, fortune: Int, silktouch: Boolean, other: Map[Int, Int] = Map.empty) {
     holder =>
+    lazy val allEnchantments: Map[Int, Int] = Map(
+      IEnchantableTile.EfficiencyID -> efficiency,
+      IEnchantableTile.UnbreakingID -> unbreaking,
+      IEnchantableTile.FortuneID -> fortune,
+      IEnchantableTile.SilktouchID -> silktouch.compare(false)
+    ) ++ other
+    lazy val visibleEnchantments: java.util.Map[Integer, Integer] = allEnchantments.collect(enchantCollector).asJava
     override def toString = s"Efficiency=${holder.efficiency} Unbreaking=${holder.unbreaking} Fortune=${holder.fortune} Silktouch=${holder.silktouch} other=${holder.other}"
   }
 
@@ -493,12 +497,7 @@ object TileQuarry2 {
   private final val NBT_Z_MAX = "zMax"
 
   def getEnchantmentMap(enchantments: EnchantmentHolder): Map[Int, Int] = {
-    Map(
-      IEnchantableTile.EfficiencyID -> enchantments.efficiency,
-      IEnchantableTile.UnbreakingID -> enchantments.unbreaking,
-      IEnchantableTile.FortuneID -> enchantments.fortune,
-      IEnchantableTile.SilktouchID -> enchantments.silktouch.compare(false)
-    ) ++ enchantments.other
+    enchantments.allEnchantments
   }
 
   implicit val enchantmentHolderToNbt: NBTWrapper[EnchantmentHolder, NBTTagCompound] = enchantments => {

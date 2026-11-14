@@ -37,7 +37,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
 
-import static jp.t2v.lab.syntax.MapStreamSyntax.byEntry;
 import static jp.t2v.lab.syntax.MapStreamSyntax.byKey;
 import static jp.t2v.lab.syntax.MapStreamSyntax.entry;
 import static jp.t2v.lab.syntax.MapStreamSyntax.keys;
@@ -81,11 +80,13 @@ public interface IEnchantableTile {
 
     default ItemStack getEnchantedPickaxe() {
         ItemStack stack = new ItemStack(QuarryPlusI.itemQuarryPickaxe());
-        getEnchantments().entrySet().stream()
-            .filter(byEntry(Config.content().disableMapJ().get(BlockBookMover.SYMBOL) ? isValidEnch : (k, v) -> true))
-            .map(keys(Enchantment::getEnchantmentByID))
-            .filter(byKey(APacketTile.nonNull))
-            .forEach(entry(stack::addEnchantment));
+        Map<Integer, Integer> enchantments = getEnchantments();
+        boolean restrict = Config.content().disableMapJ().get(BlockBookMover.SYMBOL);
+        for (Map.Entry<Integer, Integer> entry : enchantments.entrySet()) {
+            if (restrict && !isValidEnch.test(entry.getKey(), entry.getValue())) continue;
+            Enchantment enchantment = Enchantment.getEnchantmentByID(entry.getKey());
+            if (enchantment != null) stack.addEnchantment(enchantment, entry.getValue());
+        }
         return stack;
     }
 

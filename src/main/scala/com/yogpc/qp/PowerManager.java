@@ -14,7 +14,6 @@
 package com.yogpc.qp;
 
 import com.yogpc.qp.tile.APowerTile;
-import com.yogpc.qp.tile.DetailDataCollector;
 import com.yogpc.qp.tile.EnergyUsage;
 import com.yogpc.qp.tile.TileMiningWell;
 import com.yogpc.qp.tile.TileSolidQuarry;
@@ -199,7 +198,7 @@ public class PowerManager {
         if (pp.useEnergy(energy, energy, false, usage) != energy)
             return false;
         pp.useEnergy(energy, energy, true, usage);
-        pp.collector.get().addData(new DetailDataCollector.Common(usage, energy));
+        pp.collector.recordCommon(usage, energy);
         return true;
     }
 
@@ -219,7 +218,7 @@ public class PowerManager {
         if (pp.useEnergy(pw, pw, false, EnergyUsage.BREAK_BLOCK) != pw)
             return false;
         pp.useEnergy(pw, pw, true, EnergyUsage.BREAK_BLOCK);
-        pp.collector.get().addData(new DetailDataCollector.Break(state, hardness, pw));
+        pp.collector.recordBreak(state, hardness, pw);
         return true;
     }
 
@@ -266,7 +265,7 @@ public class PowerManager {
         if (pp.useEnergy(pw, pw, false, EnergyUsage.PUMP_FLUID) != pw)
             return false;
         pp.useEnergy(pw, pw, true, EnergyUsage.PUMP_FLUID);
-        pp.collector.get().addData(new DetailDataCollector.Pump(liquidsCount, U, framesToBuild, pw));
+        pp.collector.recordPump(liquidsCount, U, framesToBuild, pw);
         return true;
     }
 
@@ -280,7 +279,7 @@ public class PowerManager {
         if (pp.useEnergy(pw, pw, false, usage) != pw)
             return false;
         pp.useEnergy(pw, pw, true, usage);
-        pp.collector.get().addData(new DetailDataCollector.Common(usage, pw));
+        pp.collector.recordCommon(usage, pw);
         return true;
     }
 
@@ -309,7 +308,7 @@ public class PowerManager {
         long used = pp.useEnergy(0, (long) (pw * APowerTile.MJToMicroMJ), true, EnergyUsage.MOVE_HEAD);
         if (used == 0) return dist;
         pw = (double) used / APowerTile.MJToMicroMJ;
-        pp.collector.get().addData(new DetailDataCollector.Common(EnergyUsage.MOVE_HEAD, used));
+        pp.collector.recordCommon(EnergyUsage.MOVE_HEAD, used);
         return pw * (U * MoveHead_CU + 1) / bp;
     }
 
@@ -329,7 +328,7 @@ public class PowerManager {
     public static void useEnergyLaser(final APowerTile pp, final long power, final int U, final int F, final boolean S, boolean simulate) {
         long pw = (long) (power * Math.pow(Laser_CF, F) * (S ? Laser_CS : 1) / (U * Laser_CU + 1));
         pp.useEnergy(pw, pw, !simulate, EnergyUsage.LASER);
-        if (!simulate) pp.collector.get().addData(new DetailDataCollector.Common(EnergyUsage.LASER, pw));
+        if (!simulate) pp.collector.recordCommon(EnergyUsage.LASER, pw);
     }
 
     /**
@@ -343,7 +342,7 @@ public class PowerManager {
     public static boolean useEnergyFillerWork(final APowerTile filler, boolean simulate) {
         long pw = FillerWork_BP;
         boolean result = filler.useEnergy(pw, pw, !simulate, EnergyUsage.FILLER) == pw;
-        if (result && !simulate) filler.collector.get().addData(new DetailDataCollector.Common(EnergyUsage.FILLER, pw));
+        if (result && !simulate) filler.collector.recordCommon(EnergyUsage.FILLER, pw);
         return result;
     }
 }

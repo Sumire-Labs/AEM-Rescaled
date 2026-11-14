@@ -83,6 +83,22 @@ public class DetailDataCollector implements Serializable {
         @Override
         public void finish() {
         }
+
+        @Override public void recordCommon(EnergyUsage usage, long energy) {}
+        @Override public void recordBreak(IBlockState state, float hardness, long energy) {}
+        @Override public void recordPump(long amount, int unbreaking, long frames, long energy) {}
+    }
+
+    public void recordCommon(EnergyUsage usage, long energy) {
+        get().addData(new Common(usage, energy));
+    }
+
+    public void recordBreak(IBlockState state, float hardness, long energy) {
+        get().addData(new Break(state, hardness, energy));
+    }
+
+    public void recordPump(long amount, int unbreaking, long frames, long energy) {
+        get().addData(new Pump(amount, unbreaking, frames, energy));
     }
 
     public Data get() {
