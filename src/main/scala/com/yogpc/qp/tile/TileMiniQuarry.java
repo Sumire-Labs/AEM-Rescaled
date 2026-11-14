@@ -3,6 +3,7 @@ package com.yogpc.qp.tile;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import com.yogpc.qp.PowerManager;
 import com.yogpc.qp.Config;
 import com.yogpc.qp.QuarryPlus;
@@ -157,10 +158,7 @@ public final class TileMiniQuarry extends APowerTile implements IEnchantableTile
     @Override public void update() {
         super.update();
         if (world.isRemote || machineDisabled) return;
-        for (int i = 0; i < output.getSlots(); i++) {
-            ItemStack stack = output.getStackInSlot(i);
-            if (!stack.isEmpty()) { output.setStackInSlot(i, InvUtils.injectToNearTile(world, pos, stack)); break; }
-        }
+        exportOutput(output, stack -> InvUtils.injectToNearTile(world, pos, stack));
         if (!running || area == null) return;
         // Only one fuel module generates per real tick, regardless of the scan budget.
         for (int i = 0; i < tools.getSizeInventory(); i++) {
@@ -220,6 +218,17 @@ public final class TileMiniQuarry extends APowerTile implements IEnchantableTile
         }
         if (next >= area.size()) setRunning(false, "qp.mini.complete");
         else changed();
+    }
+
+    static void exportOutput(ItemStackHandler output, UnaryOperator<ItemStack> insert) {
+        for (int i = 0; i < output.getSlots(); i++) {
+            ItemStack stack = output.getStackInSlot(i);
+            if (stack.isEmpty()) continue;
+            ItemStack remainder = insert.apply(stack);
+            if (remainder.getCount() == stack.getCount()) continue;
+            output.setStackInSlot(i, remainder);
+            break;
+        }
     }
 
     private void store(ItemStack stack) {

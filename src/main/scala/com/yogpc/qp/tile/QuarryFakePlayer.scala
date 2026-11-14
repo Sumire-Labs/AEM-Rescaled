@@ -59,15 +59,15 @@ class QuarryFakePlayer private(worldServer: WorldServer) extends FakePlayer(worl
 
 object QuarryFakePlayer {
   val profile = new GameProfile(UUID.fromString("ce6c3b8d-11ba-4b32-90d5-e5d30167fca7"), "[QuarryPlus]")
-  private var players = Map.empty[GameProfile, QuarryFakePlayer]
+  private var players = Map.empty[WorldServer, QuarryFakePlayer]
   MinecraftForge.EVENT_BUS.register(this)
 
   def get(server: WorldServer, pos: BlockPos): QuarryFakePlayer = {
-    val player = players.get(profile) match {
+    val player = players.get(server) match {
       case Some(x) => x
       case None =>
         val p = new QuarryFakePlayer(server)
-        players = players.updated(profile, p)
+        players = players.updated(server, p)
         p
     }
     player.setPosition(pos.getX, pos.getY, pos.getZ)
@@ -77,7 +77,7 @@ object QuarryFakePlayer {
   @SubscribeEvent
   def onUnload(event: WorldEvent.Unload): Unit = {
     if (event.getWorld.isInstanceOf[WorldServer]) {
-      players = players.filter { case (_, p) => p.world != event.getWorld }
+      players = players.filter { case (world, _) => world != event.getWorld }
     }
   }
 }

@@ -31,8 +31,12 @@ jobs:
       contents: read
     env:
       RELEASE_TAG: ${{ inputs.tag }}
+    defaults:
+      run:
+        working-directory: source
     steps:
       - name: Validate selected destinations
+        working-directory: .
         env:
           PUBLISH_CURSEFORGE: ${{ inputs.curseforge }}
           PUBLISH_MODRINTH: ${{ inputs.modrinth }}
@@ -59,6 +63,7 @@ jobs:
             exit 1
           fi
       - name: Resolve Modrinth project ID
+        working-directory: .
         if: inputs.modrinth
         id: modrinth
         env:
@@ -80,10 +85,17 @@ jobs:
             exit 1
           fi
           echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
-      - name: Checkout
+      - name: Checkout release tooling
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: release-tools
+          persist-credentials: false
+      - name: Checkout tagged sources
         uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ inputs.tag }}
+          path: source
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
@@ -101,7 +113,11 @@ jobs:
         run: chmod +x ./gradlew
         
       - name: Execute Gradle build
-        run: GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" ./gradlew build writeReleaseMetadata
+        run: |
+          GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew clean build verifyReleaseJar writeReleaseMetadata \
+              --init-script "$GITHUB_WORKSPACE/release-tools/gradle/release-verification.init.gradle" \
+              -Prelease_verification_script="$GITHUB_WORKSPACE/release-tools/gradle/scripts/verify-release.gradle"
 
       - name: Publish to Maven
         if: inputs.maven
@@ -142,10 +158,11 @@ jobs:
           modrinth-token: ${{ inputs.modrinth && secrets.MODRINTH_TOKEN || '' }}
           curseforge-id: ${{ inputs.curseforge && '1736004' || '' }}
           curseforge-token: ${{ inputs.curseforge && secrets.CURSEFORGE_TOKEN || '' }}
+          curseforge-name: AdditionalEnchantedMiner-Rescaled-${{ steps.version.outputs.version }}.jar
 
           files: |
-            build/libs/!(*-@(dev|mcp|shadow|sources|javadoc)).jar
-            build/libs/*-@(sources|javadoc).jar
+            source/build/libs/!(*-@(dev|mcp|shadow|sources|javadoc)).jar
+            source/build/libs/*-@(sources|javadoc).jar
           loaders: forge
           game-versions: 1.12.2
           java: |
@@ -153,4 +170,4 @@ jobs:
           version: ${{ steps.version.outputs.version }}
           # CurseForge and Modrinth represent release candidates as beta builds.
           version-type: ${{ steps.version.outputs.stage == 'rc' && 'beta' || steps.version.outputs.stage }}
-          changelog-file: build/release-changelog.md
+          changelog-file: source/build/release-changelog.md
