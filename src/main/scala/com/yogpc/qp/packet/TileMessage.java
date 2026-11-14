@@ -11,9 +11,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.relauncher.Side;
 
 /**
- * To both client and server.
+ * Server-to-client tile synchronization. Clients cannot supply authoritative tile NBT.
  */
 public class TileMessage implements IMessage {
     private NBTTagCompound compound;
@@ -36,6 +37,7 @@ public class TileMessage implements IMessage {
 
     @Override
     public IMessage onReceive(IMessage message, MessageContext ctx) {
+        if (ctx.side != Side.CLIENT || compound == null) return null;
         BlockPos pos = new BlockPos(compound.getInteger("x"), compound.getInteger("y"), compound.getInteger("z"));
         World world = QuarryPlus.proxy.getPacketWorld(ctx.netHandler);
         Runnable runnable = () -> Optional.ofNullable(world.getTileEntity(pos)).ifPresent(entity -> entity.readFromNBT(compound));

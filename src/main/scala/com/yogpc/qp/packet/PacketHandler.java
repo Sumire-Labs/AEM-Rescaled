@@ -50,6 +50,7 @@ public class PacketHandler {
         IMessageHandler<IMessage, IMessage> handler = (message, ctx) -> message.onReceive(message, ctx);
         AtomicInteger id = new AtomicInteger(0);
         wrapper.registerMessage(handler, TileMessage.class, id.getAndIncrement(), Side.CLIENT);
+        // Retain the discriminator to avoid renumbering the protocol; TileMessage rejects server delivery.
         wrapper.registerMessage(handler, TileMessage.class, id.getAndIncrement(), Side.SERVER);
         //pump
         wrapper.registerMessage(handler, Now.class, id.getAndIncrement(), Side.CLIENT);
