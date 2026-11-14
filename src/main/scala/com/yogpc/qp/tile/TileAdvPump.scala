@@ -2,6 +2,7 @@ package com.yogpc.qp.tile
 
 import java.lang.{Boolean => JBool}
 import java.util
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import com.yogpc.qp.block.ADismCBlock
 import com.yogpc.qp.compat.InvUtils
 import com.yogpc.qp.gui.TranslationKeys
@@ -47,7 +48,7 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
   private var target: BlockPos = BlockPos.ORIGIN
   private var toDig: List[BlockPos] = Nil
   private var toDelete: List[BlockPos] = Nil
-  private var inRange: Set[BlockPos] = Set.empty
+  private var inRange = new LongOpenHashSet()
   private val paths = mutable.Map.empty[BlockPos, List[BlockPos]]
   private val FACINGS = List(EnumFacing.UP, EnumFacing.NORTH, EnumFacing.SOUTH, EnumFacing.WEST, EnumFacing.EAST)
 
@@ -149,7 +150,7 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
   }
 
   def buildWay(): Unit = {
-    val checked = mutable.Set.empty[BlockPos]
+    val checked = new LongOpenHashSet()
     val nextPosesToCheck = new ArrayBuffer[BlockPos](getPos.getY)
     var fluid = FluidRegistry.WATER
     toDig = Nil
@@ -166,7 +167,7 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
         if (!getWorld.isAirBlock(downPos)) {
           val state = getWorld.getBlockState(downPos)
           if (TilePump.isLiquid(state)) {
-            checked.add(downPos)
+            checked.add(downPos.toLong)
             paths.put(downPos, List(downPos))
             if (TilePump.isLiquid(state, true, getWorld, downPos))
               toDig = downPos :: toDig
@@ -198,7 +199,7 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
       for (posToCheck <- copied; offset <- FACINGS) {
         val offsetPos = posToCheck.offset(offset)
         if (ench.inRange(getPos, offsetPos)) {
-          if (checked.add(offsetPos)) {
+          if (checked.add(offsetPos.toLong)) {
             val state = getWorld.getBlockState(offsetPos)
             if (findFluid(state) == fluid) {
               paths += ((offsetPos, offsetPos :: paths(posToCheck)))
@@ -212,7 +213,8 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
         }
       }
     }
-    inRange = checked.toSet
+    // Discovery is complete; this set is read only until the next search replaces it.
+    inRange = checked
     getWorld.profiler.endSection()
   }
 
@@ -281,7 +283,7 @@ class TileAdvPump extends APowerTile with IEnchantableTile with ITickable with I
     if (placeFrame)
       EnumFacing.HORIZONTALS.foreach(facing => {
         val offset = pos.offset(facing)
-        if (!inRange.contains(offset) && TilePump.isLiquid(getWorld.getBlockState(offset))) {
+        if (!inRange.contains(offset.toLong) && TilePump.isLiquid(getWorld.getBlockState(offset))) {
           getWorld.setBlockState(offset, QuarryPlusI.blockFrame.getDammingState)
         }
       })

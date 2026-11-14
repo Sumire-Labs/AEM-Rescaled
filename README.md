@@ -19,6 +19,8 @@ AEM-specific dependency, runtime, publishing and historical-release scripts rema
 Formatting is opt-in with `-Penable_spotless=true`; its configuration is in `gradle/spotless/`.
 License files and source notices are maintained manually.
 
+JFR workload commands and before/after measurements are in [Advanced Pump profiling](docs/performance/advanced-pump.md).
+
 The unclassified Maven artifact remains the SRG distribution JAR. Its runtime metadata includes Scala, Scalar and
 ModularUI. Optional integration mods and the Cleanroom userdev environment are configured by the consuming project.
 Scala and ModularUI are also exposed on the compile classpath for AEM's public API types.
