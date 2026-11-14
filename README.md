@@ -21,6 +21,7 @@ License files and source notices are maintained manually.
 
 The unclassified Maven artifact remains the SRG distribution JAR. Its runtime metadata includes Scala, Scalar and
 ModularUI. Optional integration mods and the Cleanroom userdev environment are configured by the consuming project.
+Scala and ModularUI are also exposed on the compile classpath for AEM's public API types.
 To verify publishing without uploading:
 
 ```shell

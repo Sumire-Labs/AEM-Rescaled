@@ -2,12 +2,23 @@
 def distributionJar = tasks.named('reobfJar').flatMap { it.output }
 // Publish required runtime libraries, rather than the optional integrations and userdev environment.
 // In particular, classifier deobfuscation capabilities are local component rules, not portable metadata.
-def requiredRuntime = ['org.scala-lang:scala3-library_3', 'com.cleanroommc:modularui', 'curse.maven:scalar-1012168'] as Set
+def requiredApi = ['org.scala-lang:scala3-library_3', 'com.cleanroommc:modularui'] as Set
+def requiredRuntime = ['curse.maven:scalar-1012168'] as Set
+def publishedApi = configurations.create('publishedApiDependencies') {
+    canBeConsumed = false
+    canBeResolved = false
+}
 def publishedRuntime = configurations.create('publishedRuntimeDependencies') {
     canBeConsumed = false
     canBeResolved = false
 }
-configurations.runtimeElements.setExtendsFrom([configurations.api, publishedRuntime])
+configurations.apiElements.setExtendsFrom([configurations.api, publishedApi])
+configurations.runtimeElements.setExtendsFrom([configurations.api, publishedApi, publishedRuntime])
+publishedApi.dependencies.addAllLater(providers.provider {
+    (configurations.implementation.allDependencies + configurations.runtimeOnly.allDependencies)
+        .findAll { requiredApi.contains("${it.group}:${it.name}".toString()) }
+        .collect { it.copy() }
+})
 publishedRuntime.dependencies.addAllLater(providers.provider {
     (configurations.implementation.allDependencies + configurations.runtimeOnly.allDependencies)
         .findAll { requiredRuntime.contains("${it.group}:${it.name}".toString()) }

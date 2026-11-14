@@ -21,6 +21,7 @@ dependencies {
 }
 
 tasks.register("verifyPublishedMod") {
+    dependsOn(tasks.compileJava)
     group = "verification"
     description = "Resolves AEM from its published metadata in an independent Cleanroom project."
     inputs.files(configurations.compileClasspath, configurations.runtimeClasspath)
