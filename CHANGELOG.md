@@ -4,29 +4,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [12.7.5] - 2026-11-15
+
 ### Added
 
-- Add QuarryPlus traversal/head-position profiling and an optional Pulsar SCALAR comparison that waits for lighting completion.
-- Add an opt-in JFR workload and comparison tools for Advanced Pump and Chunk Destroyer.
+- Add opt-in JFR workloads and comparison tools for QuarryPlus, Chunk Destroyer and Advanced Pump, including head movement, drainage and energy checks.
+- Add an optional Pulsar SCALAR profiling setup that waits for lighting completion and compares final light values. Pulsar remains optional; measurement conditions and limits are in the [performance report](https://github.com/Sumire-Labs/AEM-Rescaled/blob/12.7.5/docs/performance/mining-and-pulsar.md).
 
 ### Changed
 
-- Reduce QuarryPlus allocations in item routing, single-item drop aggregation and enchanted-tool creation. Preserve drop normalization, routing priority and immutable enchantment snapshots.
-- Avoid constructing energy-detail records when the tile's detail collector is disabled. Enabled collectors keep their existing output.
-- Reduce Chunk Destroyer allocations when checking no-drop block rules by retaining an ordered rule array until configuration reload. Rule matching, harvesting events and work limits are unchanged.
-- Reduce Advanced Pump search allocations by storing visited coordinates as packed longs and reusing the completed search set. Traversal order, drainage and energy costs are unchanged.
-- Update the CleanroomDevEnv base to `6b24e5c`, migrate the main build and shared scripts to Kotlin DSL, and update Gradle to 9.9.0.
-- Replace tokens in all compiled Mod classes and validate text constants without interpreting class-file binary data as text.
-- Resolve embedded dependencies with Java runtime attributes and verify their JAR entries and manifest declarations.
-- Keep AEM's Scala compilation, SRG Maven artifact, LGPL license and historical release workflows; accept both current and legacy Maven credential variables.
+- Reduce QuarryPlus allocations during item routing, single-item drop handling and enchanted-tool creation. Routing priority, drop normalization and immutable enchantment views retain their existing behavior.
+- Skip energy-detail record construction when the tile's detail collector is disabled. Enabled collectors keep the same output.
+- Reuse Chunk Destroyer block-rule arrays until configuration reload, avoiding an iterator allocation for each block check.
+- Store Advanced Pump visited coordinates as packed longs and reuse the completed search set. Traversal order, drainage and energy costs remain the same.
+- Update the CleanroomDevEnv base to `6b24e5c` and Gradle to 9.9.0. Move the main build and shared scripts to Kotlin DSL while retaining Scala compilation, the SRG Maven artifact and the LGPL license.
+- Accept both current and legacy Maven credential variables, and verify published artifacts with an independent consumer in CI.
 
 ### Fixed
 
+- Keep fake players separate for each world and refresh their position for each Placer activation.
+- Preserve Placer replacement items and overflow items after item callbacks. Clean up its temporary inventory and support block when a callback throws.
+- Let Mini Quarry export later stacks when the first stack is rejected by adjacent inventories.
 - Drop only the uninserted Workbench output when an adjacent inventory accepts part of a crafted stack.
-- Preserve large fluid balances during export and retain tagged fluid variants across saves.
-- Reject client-authored tile synchronization and stale Mover/template edit packets.
+- Subtract only the fluid volume actually transferred, including when stored amounts exceed the integer limit. Preserve fluid NBT variants and long quantities across saves.
 - Respect canceled block-break events before legacy Quarries and Mining Wells consume energy or change blocks.
-- Publish portable required dependencies and expose Scala/ModularUI API types to Maven consumers; verify an independent consumer in CI.
+- Replace tokens in all compiled Mod classes and inspect class-file text constants when checking for unresolved tokens.
+- Resolve embedded JARs using Java runtime attributes and verify their manifest declarations and archive entries.
+- Remove development-only and optional integration dependencies from published Maven metadata, and expose Scala and ModularUI types to API consumers.
+- Send Maven Basic authentication credentials and verify distribution JARs before tagged artifacts are published.
+
+### Security
+
+- Reject client-authored tile NBT synchronization and stale Mover or template edit requests.
 
 ## [12.7.4]
 

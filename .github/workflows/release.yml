@@ -51,6 +51,34 @@ jobs:
         id: metadata
         run: cat build/release-metadata.properties >> "$GITHUB_OUTPUT"
 
+      - name: Read release notes
+        id: notes
+        shell: bash
+        run: |
+          : > build/release-notes.md
+          if [[ -f CHANGELOG.md ]]; then
+            awk -v tag="$RELEASE_TAG" '
+              { sub(/\r$/, "") }
+              /^#{1,2}[ \t]+/ {
+                match($0, /^#+/)
+                depth = RLENGTH
+                label = $0
+                sub(/^#+[ \t]+/, "", label)
+                split(label, words, /[ \t]+/)
+                if (found && depth <= sectionDepth) exit
+                if (words[1] == "[" tag "]") { found = 1; sectionDepth = depth; next }
+              }
+              found { notes = notes $0 ORS }
+              END { if (notes ~ /[^[:space:]]/) printf "%s", notes }
+            ' CHANGELOG.md > build/release-notes.md
+          fi
+          if [[ -s build/release-notes.md ]]; then
+            echo 'body_file=source/build/release-notes.md' >> "$GITHUB_OUTPUT"
+            echo 'generate=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'generate=true' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Select release artifacts
         shell: bash
         run: |
@@ -67,5 +95,6 @@ jobs:
           tag: ${{ env.RELEASE_TAG }}
           artifacts: "source/build/release/*.jar"
           artifactErrorsFailBuild: true
-          generateReleaseNotes: true
+          bodyFile: ${{ steps.notes.outputs.body_file }}
+          generateReleaseNotes: ${{ steps.notes.outputs.generate == 'true' }}
           prerelease: ${{ steps.metadata.outputs.stage != 'release' }}
