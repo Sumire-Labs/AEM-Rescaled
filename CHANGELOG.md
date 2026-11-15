@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Publish tagged releases to CurseForge and Modrinth through CleanroomDevEnv's Gradle publishing tasks. Use the same tasks when publishing an existing tag manually.
+- Retain upload receipts in Actions artifacts and report inaccessible Modrinth project metadata as a warning.
 
 ## [12.7.5] - 2026-11-15
 

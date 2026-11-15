@@ -33,6 +33,7 @@ jobs:
       RELEASE_TAG: ${{ inputs.tag }}
     defaults:
       run:
+        shell: bash
         working-directory: source
     steps:
       - name: Validate selected destinations
@@ -75,11 +76,14 @@ jobs:
             echo 'Invalid Modrinth project ID.' >&2
             exit 1
           fi
-          curl --fail --silent --show-error \
+          if project=$(curl --fail --silent --show-error \
             --header "Authorization: $MODRINTH_TOKEN" \
             --user-agent "$GITHUB_REPOSITORY (GitHub Actions)" \
-            "https://api.modrinth.com/v2/project/$project_id" \
-            | jq '{id, slug, title, status}'
+            "https://api.modrinth.com/v2/project/$project_id"); then
+            jq '{id, slug, title, status}' <<< "$project"
+          else
+            echo '::warning::Modrinth project metadata is not accessible. Upload permission will be checked by publishMods; public visibility must be checked separately.'
+          fi
           echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
       - name: Checkout release tooling
         uses: actions/checkout@v7.0.1
@@ -168,3 +172,10 @@ jobs:
             ./gradlew publishMods --console=plain \
               "-Pcurseforge_project_id=$CURSEFORGE_PROJECT_ID" \
               "-Pmodrinth_project_id=$MODRINTH_PROJECT_ID"
+
+      - name: Save publication receipts
+        if: always() && (inputs.curseforge || inputs.modrinth)
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: publication-receipts
+          path: source/build/publishMods/*.json
