@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag to publish (for example 13.0.0-alpha)'
+        description: 'Existing release tag to publish (for example 12.7.5)'
         required: true
         type: string
       curseforge:
@@ -21,7 +21,7 @@ on:
         default: false
 
 concurrency:
-  group: publish-${{ inputs.tag }}
+  group: release-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -68,31 +68,27 @@ jobs:
         id: modrinth
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID || 'jgRO15f7' }}
         run: |
           project_id="$MODRINTH_PROJECT_ID"
-          if [[ -z "$project_id" ]]; then
-            if ! project_id=$(curl --fail --silent --show-error \
-              --header "Authorization: $MODRINTH_TOKEN" \
-              --user-agent "$GITHUB_REPOSITORY (GitHub Actions)" \
-              https://api.modrinth.com/v2/project/aem-rescaled | jq -er '.id'); then
-              echo 'Could not resolve the Modrinth project. Set the MODRINTH_PROJECT_ID repository variable.' >&2
-              exit 1
-            fi
-          fi
           if [[ ! "$project_id" =~ ^[A-Za-z0-9]+$ ]]; then
             echo 'Invalid Modrinth project ID.' >&2
             exit 1
           fi
+          curl --fail --silent --show-error \
+            --header "Authorization: $MODRINTH_TOKEN" \
+            --user-agent "$GITHUB_REPOSITORY (GitHub Actions)" \
+            "https://api.modrinth.com/v2/project/$project_id" \
+            | jq '{id, slug, title, status}'
           echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
       - name: Checkout release tooling
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
           path: release-tools
           persist-credentials: false
       - name: Checkout tagged sources
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
           path: source
@@ -101,12 +97,12 @@ jobs:
           persist-credentials: false
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: '25'
           distribution: 'temurin'
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v6.4.1
         name: Set up Gradle
 
       - name: Add permission
@@ -138,13 +134,10 @@ jobs:
             ./gradlew publishMavenJavaPublicationToSumireLabsRepository -Ppublish_to_maven=true \
               --init-script "$RUNNER_TEMP/maven-auth.init.gradle"
 
-      - name: Read release version and stage
-        id: version
-        run: cat build/release-metadata.properties >> "$GITHUB_OUTPUT"
-
       - name: Get Changes between Tags
         run: |
           awk -v tag="$RELEASE_TAG" '
+            BEGIN { sub(/^v/, "", tag) }
             { sub(/\r$/, "") }
             /^#{1,2}[ \t]+/ {
               match($0, /^#+/)
@@ -162,23 +155,16 @@ jobs:
             git log --format='- %s (%h)' "${previous:+$previous..}HEAD" > build/release-changelog.md
           fi
 
-      - uses: Kir-Antipov/mc-publish@v3
+      - name: Publish Mods
         if: inputs.curseforge || inputs.modrinth
-        with:
-          modrinth-id: ${{ steps.modrinth.outputs.project_id }}
-          modrinth-token: ${{ inputs.modrinth && secrets.MODRINTH_TOKEN || '' }}
-          curseforge-id: ${{ inputs.curseforge && '1736004' || '' }}
-          curseforge-token: ${{ inputs.curseforge && secrets.CURSEFORGE_TOKEN || '' }}
-          curseforge-name: AdditionalEnchantedMiner-Rescaled-${{ steps.version.outputs.version }}.jar
-
-          files: |
-            source/build/libs/!(*-@(dev|mcp|shadow|sources|javadoc)).jar
-            source/build/libs/*-@(sources|javadoc).jar
-          loaders: forge
-          game-versions: 1.12.2
-          java: |
-            25
-          version: ${{ steps.version.outputs.version }}
-          # CurseForge and Modrinth represent release candidates as beta builds.
-          version-type: ${{ steps.version.outputs.stage == 'rc' && 'beta' || steps.version.outputs.stage }}
-          changelog-file: source/build/release-changelog.md
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ inputs.curseforge && '1736004' || '' }}
+          MODRINTH_PROJECT_ID: ${{ steps.modrinth.outputs.project_id }}
+          CHANGELOG_FILE: build/release-changelog.md
+        run: |
+          GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew publishMods --console=plain \
+              "-Pcurseforge_project_id=$CURSEFORGE_PROJECT_ID" \
+              "-Pmodrinth_project_id=$MODRINTH_PROJECT_ID"

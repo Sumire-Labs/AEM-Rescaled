@@ -4,12 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to release (for example 13.0.0 or 13.0.1)'
+        description: 'Existing tag to release (for example 12.7.5)'
         required: true
         type: string
   push:
     tags:
-      - "*"
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -23,27 +30,60 @@ jobs:
         working-directory: source
     steps:
       - name: Checkout release tooling
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
           path: release-tools
+          persist-credentials: false
       - name: Checkout tagged sources
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           path: source
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
       - name: Set up JDK 25
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: "25"
           distribution: "temurin"
-      - uses: gradle/actions/setup-gradle@v6.1.0
+      - uses: gradle/actions/setup-gradle@v6.4.1
         name: Set up Gradle
+      - name: Read release configuration
+        id: release
+        run: |
+          info=$(GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew -q --console=plain printReleaseInfo)
+          echo "maven=$(jq -r .maven <<< "$info")" >> "$GITHUB_OUTPUT"
+          echo "curseforge=$(jq -r .curseforge <<< "$info")" >> "$GITHUB_OUTPUT"
+          echo "modrinth=$(jq -r .modrinth <<< "$info")" >> "$GITHUB_OUTPUT"
+      - name: Check publication credentials
+        env:
+          PUBLISH_MAVEN: ${{ steps.release.outputs.maven }}
+          PUBLISH_CURSEFORGE: ${{ steps.release.outputs.curseforge }}
+          PUBLISH_MODRINTH: ${{ steps.release.outputs.modrinth }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME || secrets.MAVEN_USER }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD || secrets.MAVEN_PASS }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: |
+          if [[ "$PUBLISH_MAVEN" == true && ( -z "$MAVEN_USERNAME" || -z "$MAVEN_PASSWORD" ) ]]; then
+            echo 'Maven enabled: set MAVEN_USERNAME/MAVEN_PASSWORD or MAVEN_USER/MAVEN_PASS.' >&2
+            exit 1
+          fi
+          if [[ "$PUBLISH_CURSEFORGE" == true && -z "$CURSEFORGE_TOKEN" ]]; then
+            echo 'CurseForge ID configured: set CURSEFORGE_TOKEN.' >&2
+            exit 1
+          fi
+          if [[ "$PUBLISH_MODRINTH" == true && -z "$MODRINTH_TOKEN" ]]; then
+            echo 'Modrinth ID configured: set MODRINTH_TOKEN.' >&2
+            exit 1
+          fi
       - name: Execute Gradle build
         run: |
-          GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" ./gradlew clean build verifyReleaseJar writeReleaseMetadata \
+          GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew clean build verifyReleaseJar writeReleaseMetadata \
             --init-script "$GITHUB_WORKSPACE/release-tools/gradle/release-verification.init.gradle" \
             -Prelease_verification_script="$GITHUB_WORKSPACE/release-tools/gradle/scripts/verify-release.gradle"
 
@@ -58,6 +98,7 @@ jobs:
           : > build/release-notes.md
           if [[ -f CHANGELOG.md ]]; then
             awk -v tag="$RELEASE_TAG" '
+              BEGIN { sub(/^v/, "", tag) }
               { sub(/\r$/, "") }
               /^#{1,2}[ \t]+/ {
                 match($0, /^#+/)
@@ -76,8 +117,28 @@ jobs:
             echo 'body_file=source/build/release-notes.md' >> "$GITHUB_OUTPUT"
             echo 'generate=false' >> "$GITHUB_OUTPUT"
           else
-            echo 'generate=true' >> "$GITHUB_OUTPUT"
+            echo "CHANGELOG.md must have a nonempty section for tag $RELEASE_TAG." >&2
+            exit 1
           fi
+
+      - name: Publish Maven artifacts
+        if: steps.release.outputs.maven == 'true'
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME || secrets.MAVEN_USER }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD || secrets.MAVEN_PASS }}
+        run: |
+          GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew publish --console=plain
+
+      - name: Publish Mods
+        if: steps.release.outputs.curseforge == 'true' || steps.release.outputs.modrinth == 'true'
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CHANGELOG_FILE: build/release-notes.md
+        run: |
+          GITHUB_REF="refs/tags/$RELEASE_TAG" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" \
+            ./gradlew publishMods --console=plain
 
       - name: Select release artifacts
         shell: bash
