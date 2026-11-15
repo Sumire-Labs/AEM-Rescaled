@@ -1,9 +1,11 @@
 plugins {
     `java-library`
+    scala
     id("com.cleanroommc.cleanroomgradle")
 }
 
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(25)) }
+scala { scalaVersion.set("3.10.0") }
 
 repositories {
     maven {
@@ -21,7 +23,7 @@ dependencies {
 }
 
 tasks.register("verifyPublishedMod") {
-    dependsOn(tasks.compileJava)
+    dependsOn(tasks.compileJava, tasks.compileScala)
     group = "verification"
     description = "Resolves AEM from its published metadata in an independent Cleanroom project."
     inputs.files(configurations.compileClasspath, configurations.runtimeClasspath)

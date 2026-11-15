@@ -11,7 +11,7 @@ class EnchantmentSnapshotTest {
 
     @SuppressWarnings("unchecked")
     @Test void preservesPositiveLevelsAndOtherEnchantmentOverrides() {
-        var other = (scala.collection.immutable.Map<Object, Object>) scala.collection.immutable.Map$.MODULE$.<Object, Object>empty()
+        var other = (scala.collection.immutable.Map<Integer, Integer>) scala.collection.immutable.Map$.MODULE$.<Integer, Integer>empty()
                 .updated(IEnchantableTile.FortuneID, 0).updated(123, 7);
         for (int efficiency = 0; efficiency <= 5; efficiency++) {
             for (int unbreaking = 0; unbreaking <= 3; unbreaking++) {
@@ -30,7 +30,7 @@ class EnchantmentSnapshotTest {
     }
 
     @Test void changingTheHolderKeepsPreviousViewsImmutable() {
-        var empty = scala.collection.immutable.Map$.MODULE$.<Object, Object>empty();
+        var empty = scala.collection.immutable.Map$.MODULE$.<Integer, Integer>empty();
         var previous = new TileQuarry2.EnchantmentHolder(1, 0, 0, false, empty);
         var view = previous.visibleEnchantments();
         var changed = new TileQuarry2.EnchantmentHolder(5, 0, 0, false, empty);

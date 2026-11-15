@@ -107,7 +107,7 @@ import static com.yogpc.qp.QuarryPlusI.torchModule;
     name = QuarryPlus.Mod_Name,
     version = QuarryPlusTags.VERSION,
     guiFactory = QuarryPlus.Optionals.configFactory,
-    dependencies = "required:forge@[14.23.4.2705,);required-after:scalar;required-after:modularui@[3.1.6,);"
+    dependencies = "required:forge@[14.23.4.2705,);required-after:scalar@[@{SCALA_VERSION},);required-after:modularui@[3.1.6,);"
 )
 public class QuarryPlus {
 

@@ -2,7 +2,7 @@
 
 ## This mod is a fork of Additional Enchanted Miner, which is a fork of Quarry Plus
 
-This mod targets Cleanroom 0.7.14-alpha or newer. It requires Scala3 and ModularUI 3.1.6 or newer.
+This mod targets Cleanroom 0.7.14-alpha or newer. It requires [Scalar 3.10.0 or newer](https://www.curseforge.com/minecraft/mc-mods/scalar) and ModularUI 3.1.6 or newer.
 This mod adds automatic miner. All machines can accept RF, MJ, EU and Forge Energy.
 
 ## Machines
@@ -21,7 +21,7 @@ Large mining and pumping jobs can still cause lag. See the [performance measurem
 
 ## Changes
 
-- Port to Cleanroom 0.7.x with Java 25, Scala 3.x and MCP 39-1.12 mappings.
+- Port to Cleanroom 0.7.x with Java 25, Scala 3.10 and MCP 39-1.12 mappings.
 - Replace machine and configuration screens with ModularUI.
 - Backport Mini Quarry, Void Module and Repeat Tick Module from newer versions.
 - Reduce temporary allocations in QuarryPlus mining, Advanced Pump searches and Chunk Destroyer block-rule checks while preserving work limits, drops and energy costs.

@@ -124,6 +124,7 @@ tokenEnvoy {
         set("MOD_ID", modId)
         set("MOD_NAME", modName)
         set("MOD_VERSION", modVersion)
+        set("SCALA_VERSION", propertyString("scala_version"))
         set("mod_id", modId)
         set("mod_name", modName)
         set("mod_version", modVersion)

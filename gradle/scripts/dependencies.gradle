@@ -49,7 +49,7 @@ repositories {
 dependencies {
     // LWJGL compatibility is supplied by the selected Cleanroom 0.7 userdev.
 
-    // Use the real Scala 3.9 provider: the Maven 1.0.0 stub disables its Mod container in development.
+    // Match the Scala compiler to Scalar's bundled runtime; the Maven 1.0.0 stub disables its Mod container.
     runtimeOnly(deobf("curse.maven:scalar-1012168:${scalar_file}")) {
         transitive = false
     }

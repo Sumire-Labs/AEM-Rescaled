@@ -21,6 +21,34 @@ val runtimeJar = tasks.named<RenameJar>("reobfJar").flatMap { it.output }
 val containedNames = configurations.named("contain").flatMap { it.elements }
     .map { files -> files.map { it.asFile.name }.sorted() }
 
+val verifyScalaRuntime = tasks.register("verifyScalaRuntime") {
+    group = "verification"
+    description = "Checks that Scalar bundles the Scala version used to compile AEM."
+    inputs.property("scalaVersion", providers.gradleProperty("scala_version"))
+    inputs.files(configurations.named("runtimeClasspath"))
+    doLast {
+        val expectedVersion = inputs.properties.getValue("scalaVersion") as String
+        val libraries = inputs.files.files.filter { it.name.startsWith("scala-library-") && it.extension == "jar" }
+        check(libraries.size == 1 && libraries.single().name == "scala-library-$expectedVersion.jar") {
+            "The resolved Scala runtime must match $expectedVersion: ${libraries.map { it.name }}"
+        }
+        val scalar = inputs.files.files.single { it.name.startsWith("scalar-1012168-") && it.extension == "jar" }
+        JarFile(scalar).use { jar ->
+            val metadata = jar.getInputStream(jar.getJarEntry("mcmod.info")).use {
+                JsonSlurper().parse(it) as List<*>
+            }.filterIsInstance<Map<*, *>>().single { it["modid"] == "scalar" }
+            check(metadata["version"] == expectedVersion) {
+                "Scalar ${metadata["version"]} does not match Scala $expectedVersion."
+            }
+            check(jar.getJarEntry("scala-library-$expectedVersion.jar") != null) {
+                "Scalar must bundle scala-library-$expectedVersion.jar."
+            }
+        }
+        logger.lifecycle("Verified Scalar and Scala compiler version: $expectedVersion")
+    }
+}
+tasks.named("check") { dependsOn(verifyScalaRuntime) }
+
 val verifyModJar = tasks.register("verifyModJar") {
     group = "verification"
     description = "Checks Mod metadata and optional features in the SRG distribution jar."
