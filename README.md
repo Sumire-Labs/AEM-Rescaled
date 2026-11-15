@@ -5,37 +5,7 @@
 This mod targets Cleanroom 0.7.14-alpha or newer. It requires Scala3 and ModularUI 3.1.6 or newer.
 This mod adds automatic miner. All machines can accept RF, MJ, EU and Forge Energy.
 
-## Development
-
-The build uses [CleanroomDevEnv at `6b24e5c`](https://github.com/Sumire-Labs/CleanroomDevEnv/commit/6b24e5cc419a97a9872feed849659610d3ce6055),
-adapted for AEM's Scala 3.9 sources and optional integrations. Use JDK 25 and the Gradle wrapper:
-
-```shell
-./gradlew build verifyReleaseJar
-```
-
-The main build, settings, run configurations, Mixin configuration and distribution verification use Kotlin DSL.
-AEM-specific dependency, runtime, publishing and historical-release scripts remain in `gradle/scripts/*.gradle`.
-Formatting is opt-in with `-Penable_spotless=true`; its configuration is in `gradle/spotless/`.
-License files and source notices are maintained manually.
-
-JFR workload commands and before/after measurements are in [Advanced Pump profiling](docs/performance/advanced-pump.md).
-The follow-up [Chunk Destroyer measurements](docs/performance/chunk-destroyer.md) cover block-rule allocation and compatibility checks.
-[Mining with Pulsar](docs/performance/mining-and-pulsar.md) compares QuarryPlus and Chunk Destroyer with vanilla lighting and optional Pulsar SCALAR lighting, including propagation completion.
-
-The unclassified Maven artifact remains the SRG distribution JAR. Its runtime metadata includes Scala, Scalar and
-ModularUI. Optional integration mods and the Cleanroom userdev environment are configured by the consuming project.
-Scala and ModularUI are also exposed on the compile classpath for AEM's public API types.
-To verify publishing without uploading:
-
-```shell
-./gradlew publish -Ppublish_to_maven=true -Ppublish_to_local_maven=false -Pmaven_url=build/maven-verification
-```
-
-For remote publishing, both the template's `MAVEN_USERNAME` / `MAVEN_PASSWORD` and the existing
-`MAVEN_USER` / `MAVEN_PASS` environment variables are supported. Keep credentials outside this repository.
-
-### Machines:
+## Machines
 
 * **QuarryPlus** : It digs to y = 1 in the area of max 256 x 256 (blocks). Enchantments allow improving fuel efficiency
   and enchanted mining.
@@ -47,15 +17,22 @@ For remote publishing, both the template's `MAVEN_USERNAME` / `MAVEN_PASSWORD` a
 * **Spawner Controller** : Change the content of neighbor spawner.
 * **Mini Quarry** : Uses real tools to harvest a marker-defined area. Redstone rising edges start/stop a scan; tool enchantments and durability apply. Insert tools or a fuel module in its five slots. The block supports Efficiency and Unbreaking enchantments.
 
-ChunkDestroyer and Advanced Pump will increase the number of old GC and lag.
+Large mining and pumping jobs can still cause lag. See the [performance measurements](docs/performance/mining-and-pulsar.md) for tested workloads and the effect of optional Pulsar SCALAR lighting.
 
 ## Changes
 
-- Port to Cleanroom w/ Java 25 + Scala 3.x.
-- Native Cleanroom 0.7.x
-- Migrate MCP to 39-1.12
+- Port to Cleanroom 0.7.x with Java 25, Scala 3.x and MCP 39-1.12 mappings.
 - Replace machine and configuration screens with ModularUI.
-- Backported several features from newer versions, including Void Module, Repeat Tick Module, and Mini Quarry.
+- Backport Mini Quarry, Void Module and Repeat Tick Module from newer versions.
+- Reduce temporary allocations in QuarryPlus mining, Advanced Pump searches and Chunk Destroyer block-rule checks while preserving work limits, drops and energy costs.
+- Fix Workbench item duplication when adjacent inventories accept only part of the output.
+- Preserve Placer replacement and overflow items, and let Mini Quarry export later stacks when the first stack cannot be inserted.
+- Preserve large fluid quantities during export and keep fluid NBT variants across saves.
+- Keep fake players separate for each world and respect canceled block-break events in legacy Quarries and Mining Wells.
+- Reject client-authored tile state and stale editor requests.
+- Fix Maven dependency metadata so other Cleanroom projects can resolve and compile against AEM.
+
+See the [changelog](CHANGELOG.md) for release-by-release details.
 
 ## Credits
 
