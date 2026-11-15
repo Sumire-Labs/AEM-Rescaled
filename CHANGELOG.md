@@ -4,6 +4,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [12.7.6] - 2026-11-15
+
 ### Changed
 
 - Compile with Scala 3.10.0 and use the matching Scalar runtime. Require Scalar 3.10.0 or newer when loading the mod.
