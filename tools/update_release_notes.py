@@ -60,11 +60,25 @@ def update(platform, tag, dry_run):
         except RuntimeError as error:
             if not str(error).endswith("HTTP 404"):
                 raise
-            url = (f"https://github.com/Sumire-Labs/AEM-Rescaled/releases/download/{tag}/"
-                   f"AdditionalEnchantedMiner-Rescaled-{tag}.jar")
-            with urllib.request.urlopen(url, timeout=60) as response:
-                digest = hashlib.file_digest(response, "sha512").hexdigest()
-            _, version = request(f"https://api.modrinth.com/v2/version_file/{digest}?algorithm=sha512", token)
+            base = f"https://github.com/Sumire-Labs/AEM-Rescaled/releases/download/{tag}/"
+            urls = [base + f"AdditionalEnchantedMiner-Rescaled-{tag}{suffix}.jar"
+                    for suffix in ("", "-sources")]
+            _, project = request("https://api.cfwidget.com/1736004")
+            cf_file = next(f for f in project["files"]
+                           if f["name"] == f"AdditionalEnchantedMiner-Rescaled-{tag}.jar")
+            cf_id = cf_file["id"]
+            urls.append(f"https://edge.forgecdn.net/files/{cf_id // 1000}/{cf_id % 1000:03d}/{cf_file['name']}")
+            for download in urls:
+                with urllib.request.urlopen(download, timeout=60) as response:
+                    digest = hashlib.file_digest(response, "sha512").hexdigest()
+                try:
+                    _, version = request(f"https://api.modrinth.com/v2/version_file/{digest}?algorithm=sha512", token)
+                    break
+                except RuntimeError as lookup:
+                    if not str(lookup).endswith("HTTP 404"):
+                        raise
+            else:
+                raise RuntimeError(f"No Modrinth version matched the published files for {tag}")
     if version["project_id"] != "jgRO15f7" or version["version_number"] != tag:
         raise RuntimeError(f"Modrinth identity does not match {tag}")
     url = f"https://api.modrinth.com/v2/version/{version['id']}"
