@@ -3,6 +3,12 @@
 This is a fork of [Additional Enchanted Miner](https://github.com/Kotori316/QuarryPlus) by kotori316, which is a fork of [QuarryPlus](https://github.com/yogpstop/QuarryPlus) by yogpstop.
 This fork adds features and bug fixes, and ports the mod to [Cleanroom](https://github.com/CleanroomMC/Cleanroom) with Java 25 and Scala 3.
 
+## Requirements
+
+- [Cleanroom](https://github.com/CleanroomMC/Cleanroom) 0.7.14-alpha or newer
+- [Scalar](https://github.com/CleanroomMC/Scalar) 3.10.0 or newer
+- [ModularUI](https://github.com/CleanroomMC/ModularUI) 3.1.6 or newer
+
 ## Changes
 
 - Port to Cleanroom with Java 25 and Scala 3.
