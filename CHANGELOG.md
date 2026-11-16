@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Enable Sumire Labs Maven publication for tagged releases alongside CurseForge and Modrinth.
+
 ## [12.7.6] - 2026-11-15
 
 ### Changed
