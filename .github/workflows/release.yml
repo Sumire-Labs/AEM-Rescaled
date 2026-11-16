@@ -112,7 +112,7 @@ jobs:
               }
               found { notes = notes $0 ORS }
               END { if (notes ~ /[^[:space:]]/) printf "%s", notes }
-            ' CHANGELOG.md > build/release-notes.md
+            ' "$GITHUB_WORKSPACE/release-tools/CHANGELOG.md" > build/release-notes.md
           fi
           if [[ -s build/release-notes.md ]]; then
             echo 'body_file=source/build/release-notes.md' >> "$GITHUB_OUTPUT"

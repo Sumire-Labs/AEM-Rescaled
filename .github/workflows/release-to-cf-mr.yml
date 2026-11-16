@@ -153,7 +153,7 @@ jobs:
               if (words[1] == "[" tag "]") { found = 1; sectionDepth = depth; next }
             }
             found { print }
-          ' CHANGELOG.md > build/release-changelog.md
+          ' "$GITHUB_WORKSPACE/release-tools/CHANGELOG.md" > build/release-changelog.md
           if [ ! -s build/release-changelog.md ]; then
             previous=$(git describe --tags --abbrev=0 "$RELEASE_TAG^" 2>/dev/null || true)
             git log --format='- %s (%h)' "${previous:+$previous..}HEAD" > build/release-changelog.md

@@ -1,0 +1,35 @@
+name: Update published release notes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-published-release-notes
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [curseforge, modrinth]
+        tag: ['12.7.4', '12.7.5', '12.7.6']
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Update changelog only
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: python3 tools/update_release_notes.py '${{ matrix.platform }}' '${{ matrix.tag }}'
+      - name: Save update receipt
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-notes-${{ matrix.platform }}-${{ matrix.tag }}
+          path: build/release-notes-update/*.json

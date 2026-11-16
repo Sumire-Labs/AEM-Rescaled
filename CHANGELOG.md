@@ -4,37 +4,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Fixed
-
-- Enable Sumire Labs Maven publication for tagged releases alongside CurseForge and Modrinth.
-- Declare Scalar and ModularUI as required dependencies on CurseForge, and ModularUI on Modrinth. Include minimum requirements and download links in CF/MR release notes, and mark CurseForge files as requiring Java 25.
-
 ## [12.7.6] - 2026-11-15
 
 ### Changed
 
-- Compile with Scala 3.10.0 and use the matching Scalar runtime. Require Scalar 3.10.0 or newer when loading the mod.
-
-### Fixed
-
-- Publish tagged releases to CurseForge and Modrinth through CleanroomDevEnv's Gradle publishing tasks. Use the same tasks when publishing an existing tag manually.
-- Retain upload receipts in Actions artifacts and report inaccessible Modrinth project metadata as a warning.
+- Update to Scala 3.10.0. Scalar 3.10.0 or newer is now required.
 
 ## [12.7.5] - 2026-11-15
 
-### Added
-
-- Add opt-in JFR workloads and comparison tools for QuarryPlus, Chunk Destroyer and Advanced Pump, including head movement, drainage and energy checks.
-- Add an optional Pulsar SCALAR profiling setup that waits for lighting completion and compares final light values. Pulsar remains optional; measurement conditions and limits are in the [performance report](https://github.com/Sumire-Labs/AEM-Rescaled/blob/12.7.5/docs/performance/mining-and-pulsar.md).
-
 ### Changed
 
-- Reduce QuarryPlus allocations during item routing, single-item drop handling and enchanted-tool creation. Routing priority, drop normalization and immutable enchantment views retain their existing behavior.
-- Skip energy-detail record construction when the tile's detail collector is disabled. Enabled collectors keep the same output.
-- Reuse Chunk Destroyer block-rule arrays until configuration reload, avoiding an iterator allocation for each block check.
-- Store Advanced Pump visited coordinates as packed longs and reuse the completed search set. Traversal order, drainage and energy costs remain the same.
-- Update the CleanroomDevEnv base to `6b24e5c` and Gradle to 9.9.0. Move the main build and shared scripts to Kotlin DSL while retaining Scala compilation, the SRG Maven artifact and the LGPL license.
-- Accept both current and legacy Maven credential variables, and verify published artifacts with an independent consumer in CI.
+- Reduce temporary allocations during QuarryPlus item routing, drop handling and enchanted-tool creation.
+- Reduce temporary allocations when Chunk Destroyer checks which blocks to mine.
+- Reduce temporary allocations during Advanced Pump fluid searches. Search order, drainage and energy costs remain the same.
 
 ### Fixed
 
@@ -44,10 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Drop only the uninserted Workbench output when an adjacent inventory accepts part of a crafted stack.
 - Subtract only the fluid volume actually transferred, including when stored amounts exceed the integer limit. Preserve fluid NBT variants and long quantities across saves.
 - Respect canceled block-break events before legacy Quarries and Mining Wells consume energy or change blocks.
-- Replace tokens in all compiled Mod classes and inspect class-file text constants when checking for unresolved tokens.
-- Resolve embedded JARs using Java runtime attributes and verify their manifest declarations and archive entries.
-- Remove development-only and optional integration dependencies from published Maven metadata, and expose Scala and ModularUI types to API consumers.
-- Send Maven Basic authentication credentials and verify distribution JARs before tagged artifacts are published.
 
 ### Security
 
@@ -57,15 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Migrate to the CleanroomDevEnv template, CleanroomGradle 0.23.0, and native Cleanroom 0.7.14-alpha userdev.
-- Keep Scala 3.9 joint Java/Scala compilation and the matching Scalar runtime provider.
-- Update dependency deobfuscation, development runs, and release verification for `reobfJar`; exclude MCP development JARs from releases.
-- Remove stale signatures from remapped development dependencies so signed legacy mods such as IC2 and RedstoneFlux can load.
-
-### Added
-
-- Add a manual workflow for publishing tagged builds to CurseForge, Modrinth, and Sumire Labs Maven.
-- Publish the reobfuscated distribution JAR as the main Maven artifact.
+- Update to Cleanroom 0.7.14-alpha and Scala 3.9. Scalar 3.9.0 or newer is required.
 
 ## [13.1.3]
 
@@ -101,7 +71,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [13.0.0]
 - Java 25
 - Complete rewrite from Scalar 2 to Scalar 3
-- Migrate MCP to 39-1.12
 
 ## [12.5.7]
 
