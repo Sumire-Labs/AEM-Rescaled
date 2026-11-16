@@ -1,0 +1,34 @@
+name: Update 12.7.6 release metadata
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-12.7.6
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [curseforge, modrinth]
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Update existing release
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: python3 tools/update_12_7_6_metadata.py '${{ matrix.platform }}'
+      - name: Save update receipt
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: metadata-update-${{ matrix.platform }}
+          path: build/metadata-update/*.json
