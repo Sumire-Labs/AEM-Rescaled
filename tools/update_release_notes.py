@@ -1,10 +1,12 @@
 """Replace published release notes with the player-facing CHANGELOG section."""
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import urllib.request
 
 from update_12_7_6_metadata import request
 
@@ -48,11 +50,23 @@ def update(platform, tag, dry_run):
             raise RuntimeError("Unexpected CurseForge update response")
         return {"status": status, "file_id": file_id, "changelog": body}
     token = ("Authorization", os.environ["MODRINTH_TOKEN"])
-    _, versions = request("https://api.modrinth.com/v2/project/jgRO15f7/version", token)
-    matches = [v for v in versions if v["version_number"] == tag and v["project_id"] == "jgRO15f7"]
-    if len(matches) != 1:
-        raise RuntimeError(f"Could not identify the Modrinth version for {tag}")
-    version = matches[0]
+    # Version read scopes may not permit project-level listing. Resolve this exact
+    # version, or identify it from the hash of its published GitHub release JAR.
+    if tag == "12.7.6":
+        _, version = request("https://api.modrinth.com/v2/version/LLCbk7sk", token)
+    else:
+        try:
+            _, version = request(f"https://api.modrinth.com/v2/project/jgRO15f7/version/{tag}", token)
+        except RuntimeError as error:
+            if not str(error).endswith("HTTP 404"):
+                raise
+            url = (f"https://github.com/Sumire-Labs/AEM-Rescaled/releases/download/{tag}/"
+                   f"AdditionalEnchantedMiner-Rescaled-{tag}.jar")
+            with urllib.request.urlopen(url, timeout=60) as response:
+                digest = hashlib.file_digest(response, "sha512").hexdigest()
+            _, version = request(f"https://api.modrinth.com/v2/version_file/{digest}?algorithm=sha512", token)
+    if version["project_id"] != "jgRO15f7" or version["version_number"] != tag:
+        raise RuntimeError(f"Modrinth identity does not match {tag}")
     url = f"https://api.modrinth.com/v2/version/{version['id']}"
     status, _ = request(url, token, "PATCH", json.dumps({"changelog": body}).encode(), "application/json")
     if status != 204:
