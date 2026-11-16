@@ -1,43 +1,29 @@
-# Additional Enchanted Miner Rescaled 
+# Additional Enchanted Miner Rescaled
 
-## This mod is a fork of Additional Enchanted Miner, which is a fork of Quarry Plus
-
-This mod targets Cleanroom 0.7.14-alpha or newer. It requires [Scalar 3.10.0 or newer](https://www.curseforge.com/minecraft/mc-mods/scalar) and ModularUI 3.1.6 or newer.
-This mod adds automatic miner. All machines can accept RF, MJ, EU and Forge Energy.
-
-## Machines
-
-* **QuarryPlus** : It digs to y = 1 in the area of max 256 x 256 (blocks). Enchantments allow improving fuel efficiency
-  and enchanted mining.
-* **PumpPlus** : It adds QuarryPlus a function to pump liquid. You can make the Nether dry.
-* **WorkbenchPlus** : You need this to make machines by this mod.
-* **LaserPlus** : Use this instead of 32 BC's Laser. It improves performance of your PC and simplify wiring.
-* **ChunkDestroyer** : It takes less than an hour to flatten the area of 16 x 16 (chunks).
-* **Advanced Pump** : A pump faster than BC's one.
-* **Spawner Controller** : Change the content of neighbor spawner.
-* **Mini Quarry** : Uses real tools to harvest a marker-defined area. Redstone rising edges start/stop a scan; tool enchantments and durability apply. Insert tools or a fuel module in its five slots. The block supports Efficiency and Unbreaking enchantments.
-
-Large mining and pumping jobs can still cause lag. See the [performance measurements](docs/performance/mining-and-pulsar.md) for tested workloads and the effect of optional Pulsar SCALAR lighting.
+This is a fork of [Additional Enchanted Miner](https://github.com/Kotori316/QuarryPlus) by kotori316, which is a fork of [QuarryPlus](https://github.com/yogpstop/QuarryPlus) by yogpstop.
+This fork adds features and bug fixes, and ports the mod to [Cleanroom](https://github.com/CleanroomMC/Cleanroom) with Java 25 and Scala 3.
 
 ## Changes
 
-- Port to Cleanroom 0.7.x with Java 25, Scala 3.10 and MCP 39-1.12 mappings.
-- Replace machine and configuration screens with ModularUI.
-- Backport Mini Quarry, Void Module and Repeat Tick Module from newer versions.
-- Reduce temporary allocations in QuarryPlus mining, Advanced Pump searches and Chunk Destroyer block-rule checks while preserving work limits, drops and energy costs.
-- Fix Workbench item duplication when adjacent inventories accept only part of the output.
-- Preserve Placer replacement and overflow items, and let Mini Quarry export later stacks when the first stack cannot be inserted.
-- Preserve large fluid quantities during export and keep fluid NBT variants across saves.
-- Keep fake players separate for each world and respect canceled block-break events in legacy Quarries and Mining Wells.
-- Reject client-authored tile state and stale editor requests.
-- Fix Maven dependency metadata so other Cleanroom projects can resolve and compile against AEM.
-
-See the [changelog](CHANGELOG.md) for release-by-release details.
+- Port to Cleanroom with Java 25 and Scala 3.
+- Rewrite the GUIs with [ModularUI](https://github.com/CleanroomMC/ModularUI), substantially improving the interface.
+- Backport Mini Quarry from [upstream's Minecraft 1.20.1 version](https://github.com/Kotori316/QuarryPlus/tree/1.20.1). It mines a marker-defined area using real tools and supports tool enchantments and durability, redstone control, and mining filters.
+- Backport Repeat Tick Module from [newer upstream versions](https://github.com/Kotori316/QuarryPlus/tree/v21.1.165). It increases the number of work passes for the new QuarryPlus and Chunk Destroyer. Each slot holds up to 64 modules, and each additional pass consumes its normal energy cost.
+- Backport Void Module from newer upstream versions. It discards selected mined items and supports 18 filter slots, metadata and NBT matching, and multiple modules used together.
+- Replace hardcoded GUI text with translation keys.
+- Add Japanese, English, Russian, and Simplified Chinese translations.
+- Reduce temporary allocations in QuarryPlus item export, drop handling, and enchanted-tool creation. See the [mining performance report](docs/performance/mining-and-pulsar.md).
+- Reduce Chunk Destroyer allocations by reusing block-rule data when checking which blocks to mine. See the [Chunk Destroyer performance report](docs/performance/chunk-destroyer.md).
+- Optimize Advanced Pump searches by changing how visited coordinates are stored, reducing temporary objects and copying. See the [Advanced Pump performance report](docs/performance/advanced-pump.md).
+- Fix Workbench item duplication when an adjacent inventory accepts only part of the crafted output. Only the uninserted items are dropped.
+- Fix Placer item handling to preserve replacement and overflow items, and clean up temporary state if placement throws an exception.
+- Fix Mini Quarry export stalls so later stacks can be exported even when the destination rejects the first stack.
+- Fix handling of large fluid quantities and fluids with NBT data. Subtract only the amount actually transferred, and preserve fluid NBT and large quantities when saving.
+- Keep fake players separate for each world and update their position whenever the Placer activates.
+- Fix protection mod integration so legacy Quarries and Mining Wells check for canceled block-break events before consuming energy or mining blocks.
+- Reject client-authored tile NBT updates and Mover or template edit requests that do not match the player's current editing target.
 
 ## Credits
 
-yogpstop - Original Mod 
-kotori316 - Additional Enchanted Miner
-
-Void Module and Repeat Tick Module textures from [Additional Enchanted Miner](https://github.com/Kotori316/QuarryPlus/tree/v21.1.165), licensed under LGPL-3.0.
-Mini Quarry textures and the original Mini Quarry design from [Additional Enchanted Miner for 1.20.1](https://github.com/Kotori316/QuarryPlus/tree/1.20.1), licensed under LGPL-3.0.
+- [yogpstop](https://github.com/yogpstop): original [QuarryPlus](https://github.com/yogpstop/QuarryPlus).
+- [kotori316](https://github.com/Kotori316): [Additional Enchanted Miner](https://github.com/Kotori316/QuarryPlus).
