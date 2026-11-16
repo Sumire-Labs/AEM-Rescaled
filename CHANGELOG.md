@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Enable Sumire Labs Maven publication for tagged releases alongside CurseForge and Modrinth.
+- Declare Scalar and ModularUI as required dependencies on CurseForge, and ModularUI on Modrinth. Include minimum requirements and download links in CF/MR release notes, and mark CurseForge files as requiring Java 25.
 
 ## [12.7.6] - 2026-11-15
 

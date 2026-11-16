@@ -282,14 +282,25 @@ configure<ModPublishExtension> {
     modLoaders.add("forge")
     maxRetries.set(5)
     val notes = providers.environmentVariable("CHANGELOG_FILE").orElse("RELEASE_NOTES.md")
-    changelog.set(providers.fileContents(layout.projectDirectory.file(notes)).asText.orElse(""))
+    val releaseRequirements = """
+        ## Requirements
+
+        - [Cleanroom](https://github.com/CleanroomMC/Cleanroom) ${propertyString("cleanroom_version")} or newer
+        - [Scalar](https://www.curseforge.com/minecraft/mc-mods/scalar) ${propertyString("scala_version")} or newer
+        - [ModularUI](https://www.curseforge.com/minecraft/mc-mods/modularui) 3.1.6 or newer
+    """.trimIndent()
+    changelog.set(providers.fileContents(layout.projectDirectory.file(notes)).asText.orElse("").map {
+        "$releaseRequirements\n\n$it"
+    })
     if (curseforgeProjectId.isNotBlank()) {
         curseforge {
             projectId.set(curseforgeProjectId)
             accessToken.set(providers.environmentVariable("CURSEFORGE_TOKEN"))
             minecraftVersions.add("1.12.2")
+            javaVersions.add(JavaVersion.VERSION_25)
             client.set(true)
             server.set(true)
+            requires("scalar", "modularui")
         }
     }
     if (modrinthProjectId.isNotBlank()) {
@@ -297,6 +308,8 @@ configure<ModPublishExtension> {
             projectId.set(modrinthProjectId)
             accessToken.set(providers.environmentVariable("MODRINTH_TOKEN"))
             minecraftVersions.add("1.12.2")
+            requires("modularui")
+            // Scalar has no confirmed Modrinth project; its download is linked in the release notes.
         }
     }
 }
